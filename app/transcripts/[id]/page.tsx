@@ -113,7 +113,7 @@ export default function TranscriptDetailPage() {
   if (loading) {
     return (
       <div className="flex min-h-[calc(100vh-73px)] items-center justify-center">
-        <div className="text-[#666] dark:text-[#999]">Loading transcript...</div>
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#ff6b35] border-t-transparent" />
       </div>
     );
   }
@@ -198,10 +198,42 @@ export default function TranscriptDetailPage() {
                   Transcription failed. Please try uploading again.
                 </div>
               ) : (
-                <div className="prose prose-sm max-w-none dark:prose-invert">
-                  <p className="whitespace-pre-wrap text-[#1a1a1a] dark:text-white">
-                    {transcript.content}
-                  </p>
+                <div className="space-y-2">
+                  {transcript.content.split('\n').filter(line => line.trim()).map((line, i) => {
+                    const isAgent = line.trim().startsWith('Agent:');
+                    const isCustomer = line.trim().startsWith('Customer:');
+
+                    if (!isAgent && !isCustomer) return null;
+
+                    // Estimate timestamp (rough approximation based on line position)
+                    const estimatedTime = transcript.durationSeconds
+                      ? Math.floor((i / transcript.content.split('\n').length) * transcript.durationSeconds)
+                      : i * 5;
+                    const minutes = Math.floor(estimatedTime / 60);
+                    const seconds = estimatedTime % 60;
+                    const timestamp = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                    const text = line.replace(/^(Agent:|Customer:)\s*/, '');
+
+                    return (
+                      <div
+                        key={i}
+                        className="flex gap-3 py-2"
+                      >
+                        <div className="flex-shrink-0 w-16 text-xs text-[#999] font-mono pt-0.5">
+                          {timestamp}
+                        </div>
+                        <div className="flex-1">
+                          <span className="text-xs font-medium text-[#666] dark:text-[#999]">
+                            {isAgent ? 'Agent' : 'Customer'}
+                          </span>
+                          <p className="mt-1 text-sm text-[#1a1a1a] dark:text-white">
+                            {text}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

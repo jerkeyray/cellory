@@ -92,13 +92,13 @@ export default function CallDetailPage() {
     );
   };
 
-  const getSignalColor = (type: string) => {
+  const getMarkerColor = (type: string) => {
     const colors: Record<string, string> = {
-      objection: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-      escalation: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-      agreement: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      uncertainty: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+      commitment_event: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+      blocker_event: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
       resolution_attempt: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+      control_event: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+      stall_event: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
     };
     return colors[type] || "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
   };
@@ -122,7 +122,7 @@ export default function CallDetailPage() {
   if (loading) {
     return (
       <div className="flex min-h-[calc(100vh-73px)] items-center justify-center">
-        <div className="text-[#666] dark:text-[#999]">Loading call...</div>
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#ff6b35] border-t-transparent" />
       </div>
     );
   }
@@ -188,41 +188,70 @@ export default function CallDetailPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Signals */}
+            {/* Agent-Trainable Markers */}
             <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
               <h2 className="mb-4 text-lg font-semibold text-[#1a1a1a] dark:text-white">
-                Signals ({call.signals.length})
+                Agent Markers ({call.signals.length})
               </h2>
 
               {call.signals.length === 0 ? (
                 <p className="text-sm text-[#666] dark:text-[#999]">
-                  {call.status === "complete" ? "No signals detected" : "Processing..."}
+                  {call.status === "complete" ? "No markers detected" : "Processing..."}
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {call.signals.map((signal) => (
-                    <div
-                      key={signal.id}
-                      className="flex items-start gap-3 rounded-lg border border-[#e5e5e5] p-3 dark:border-[#2a2a2a]"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${getSignalColor(signal.signalType)}`}>
-                            {signal.signalType}
-                          </span>
-                          <span className="text-xs text-[#999]">
-                            {formatTime(signal.startTime)} - {formatTime(signal.endTime)}
-                          </span>
-                          <span className="text-xs text-[#999]">
-                            {Math.round(signal.confidence * 100)}% confidence
-                          </span>
+                  {call.signals.map((marker) => {
+                    const data = marker.signalData as any;
+                    return (
+                      <div
+                        key={marker.id}
+                        className="flex items-start gap-3 rounded-lg border border-[#e5e5e5] p-3 dark:border-[#2a2a2a]"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${getMarkerColor(marker.signalType)}`}>
+                              {marker.signalType.replace(/_/g, " ")}
+                            </span>
+                            {data.subtype && (
+                              <span className="text-xs text-[#666] dark:text-[#999]">
+                                {data.subtype.replace(/_/g, " ")}
+                              </span>
+                            )}
+                            {data.blockerType && (
+                              <span className="text-xs text-[#666] dark:text-[#999]">
+                                {data.blockerType.replace(/_/g, " ")}
+                                {data.resolved && " ✓ resolved"}
+                              </span>
+                            )}
+                            {data.strategy && (
+                              <span className="text-xs text-[#666] dark:text-[#999]">
+                                strategy: {data.strategy}
+                              </span>
+                            )}
+                            {data.controller && (
+                              <span className="text-xs text-[#666] dark:text-[#999]">
+                                {data.controller} control ({data.reason})
+                              </span>
+                            )}
+                            {data.stallType && (
+                              <span className="text-xs text-[#666] dark:text-[#999]">
+                                {data.stallType.replace(/_/g, " ")}
+                              </span>
+                            )}
+                            <span className="text-xs text-[#999]">
+                              {formatTime(marker.startTime)} - {formatTime(marker.endTime)}
+                            </span>
+                            <span className="text-xs text-[#999]">
+                              {Math.round(marker.confidence * 100)}%
+                            </span>
+                          </div>
+                          <p className="mt-1 text-sm text-[#666] dark:text-[#999]">
+                            {data.description}
+                          </p>
                         </div>
-                        <p className="mt-1 text-sm text-[#666] dark:text-[#999]">
-                          {signal.signalData.description}
-                        </p>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -232,10 +261,42 @@ export default function CallDetailPage() {
               <h2 className="mb-4 text-lg font-semibold text-[#1a1a1a] dark:text-white">
                 Transcript
               </h2>
-              <div className="prose prose-sm max-w-none dark:prose-invert">
-                <p className="whitespace-pre-wrap text-[#1a1a1a] dark:text-white">
-                  {call.transcript.content}
-                </p>
+              <div className="space-y-2">
+                {call.transcript.content.split('\n').filter((line: string) => line.trim()).map((line: string, i: number) => {
+                  const isAgent = line.trim().startsWith('Agent:');
+                  const isCustomer = line.trim().startsWith('Customer:');
+
+                  if (!isAgent && !isCustomer) return null;
+
+                  // Estimate timestamp
+                  const estimatedTime = call.transcript.durationSeconds
+                    ? Math.floor((i / call.transcript.content.split('\n').length) * call.transcript.durationSeconds)
+                    : i * 5;
+                  const minutes = Math.floor(estimatedTime / 60);
+                  const seconds = estimatedTime % 60;
+                  const timestamp = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                  const text = line.replace(/^(Agent:|Customer:)\s*/, '');
+
+                  return (
+                    <div
+                      key={i}
+                      className="flex gap-3 py-2"
+                    >
+                      <div className="flex-shrink-0 w-16 text-xs text-[#999] font-mono pt-0.5">
+                        {timestamp}
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-xs font-medium text-[#666] dark:text-[#999]">
+                          {isAgent ? 'Agent' : 'Customer'}
+                        </span>
+                        <p className="mt-1 text-sm text-[#1a1a1a] dark:text-white">
+                          {text}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -277,7 +338,7 @@ export default function CallDetailPage() {
                 </h3>
                 <dl className="space-y-3 text-sm">
                   <div>
-                    <dt className="text-[#666] dark:text-[#999]">Signal Density</dt>
+                    <dt className="text-[#666] dark:text-[#999]">Marker Density</dt>
                     <dd className="mt-1 font-medium text-[#1a1a1a] dark:text-white">
                       {aggregate.signalDensity?.toFixed(2)} / min
                     </dd>
@@ -289,16 +350,60 @@ export default function CallDetailPage() {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-[#666] dark:text-[#999]">Signal Distribution</dt>
+                    <dt className="text-[#666] dark:text-[#999]">Marker Distribution</dt>
                     <dd className="mt-1 space-y-1 text-xs">
                       {Object.entries(aggregate.signalCounts || {}).map(([type, count]) => (
                         <div key={type} className="flex justify-between">
-                          <span className="text-[#666] dark:text-[#999]">{type}</span>
+                          <span className="text-[#666] dark:text-[#999]">{type.replace(/_/g, " ")}</span>
                           <span className="font-medium text-[#1a1a1a] dark:text-white">{count as number}</span>
                         </div>
                       ))}
                     </dd>
                   </div>
+                </dl>
+              </div>
+            )}
+
+            {/* Auxiliary Metrics */}
+            {aggregate?.auxiliary_metrics && Object.keys(aggregate.auxiliary_metrics).length > 0 && (
+              <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
+                <h3 className="mb-4 text-sm font-semibold text-[#1a1a1a] dark:text-white">
+                  Call Metrics
+                </h3>
+                <dl className="space-y-2 text-sm">
+                  {aggregate.auxiliary_metrics.call_tone && (
+                    <div className="flex justify-between">
+                      <dt className="text-[#666] dark:text-[#999]">Tone</dt>
+                      <dd className="font-medium text-[#1a1a1a] dark:text-white capitalize">
+                        {aggregate.auxiliary_metrics.call_tone}
+                      </dd>
+                    </div>
+                  )}
+                  {aggregate.auxiliary_metrics.financial_discussion !== undefined && (
+                    <div className="flex justify-between">
+                      <dt className="text-[#666] dark:text-[#999]">Financial Discussion</dt>
+                      <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        {aggregate.auxiliary_metrics.financial_discussion ? "Yes" : "No"}
+                      </dd>
+                    </div>
+                  )}
+                  {aggregate.auxiliary_metrics.clear_outcome !== undefined && (
+                    <div className="flex justify-between">
+                      <dt className="text-[#666] dark:text-[#999]">Clear Outcome</dt>
+                      <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        {aggregate.auxiliary_metrics.clear_outcome ? "Yes" : "No"}
+                      </dd>
+                    </div>
+                  )}
+                  {(aggregate.auxiliary_metrics.agent_turns || aggregate.auxiliary_metrics.customer_turns) && (
+                    <div className="flex justify-between">
+                      <dt className="text-[#666] dark:text-[#999]">Turn Ratio</dt>
+                      <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        Agent: {aggregate.auxiliary_metrics.agent_turns || 0} /
+                        Customer: {aggregate.auxiliary_metrics.customer_turns || 0}
+                      </dd>
+                    </div>
+                  )}
                 </dl>
               </div>
             )}

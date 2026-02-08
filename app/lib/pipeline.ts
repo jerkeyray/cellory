@@ -7,7 +7,7 @@
 
 import { prisma } from "@/app/lib/prisma";
 import { chunkTranscript } from "./chunker";
-import { extractSignalsBatch } from "./signals";
+import { extractMarkersBatch, mergeExtractionResults } from "./signals-v2";
 import { aggregateSignals } from "./aggregator";
 
 export interface PipelineResult {
@@ -57,24 +57,38 @@ export async function processCall(callId: string): Promise<PipelineResult> {
 
     console.log(`[${callId}] Created ${chunks.length} chunks`);
 
-    // Step 2: Extract signals (gpt-4o-mini, costs money)
-    console.log(`[${callId}] Extracting signals...`);
-    const signals = await extractSignalsBatch(chunks);
+    // Step 2: Extract agent-trainable markers (gpt-4o-mini, costs money)
+    console.log(`[${callId}] Extracting markers...`);
+    const extractionResults = await extractMarkersBatch(chunks);
+    const merged = mergeExtractionResults(extractionResults);
 
-    console.log(`[${callId}] Extracted ${signals.length} signals`);
+    console.log(`[${callId}] Extracted ${merged.agent_markers.length} markers`);
+    console.log(`[${callId}] Predicted outcome: ${merged.auxiliary_metrics.predicted_outcome || "unknown"}`);
 
-    // Step 3: Persist signals
+    // Auto-set outcome from AI prediction
+    const predictedOutcome = merged.auxiliary_metrics.predicted_outcome;
+    if (predictedOutcome) {
+      await prisma.call.update({
+        where: { id: callId },
+        data: { outcome: predictedOutcome },
+      });
+    }
+
+    // Step 3: Persist markers
     await prisma.callSignal.createMany({
-      data: signals.map((signal, index) => ({
+      data: merged.agent_markers.map((marker) => ({
         callId,
-        chunkIndex: Math.floor(signal.startTime / 75), // Estimate chunk from time
-        signalType: signal.type,
-        signalData: signal.data,
-        confidence: signal.confidence,
-        startTime: signal.startTime,
-        endTime: signal.endTime,
+        chunkIndex: Math.floor(marker.startTime / 75),
+        signalType: marker.type,
+        signalData: marker as any, // Store full marker object
+        confidence: marker.confidence,
+        startTime: marker.startTime,
+        endTime: marker.endTime,
       })),
     });
+
+    // Store auxiliary metrics in call aggregate
+    const auxiliaryMetrics = merged.auxiliary_metrics;
 
     // Update status to aggregating
     await prisma.call.update({
@@ -82,18 +96,27 @@ export async function processCall(callId: string): Promise<PipelineResult> {
       data: { status: "aggregating" },
     });
 
-    // Step 4: Aggregate signals (pure computation, $0)
-    console.log(`[${callId}] Aggregating signals...`);
+    // Step 4: Aggregate markers (pure computation, $0)
+    console.log(`[${callId}] Aggregating markers...`);
     const aggregates = aggregateSignals(
-      signals,
+      merged.agent_markers.map(m => ({
+        type: m.type,
+        confidence: m.confidence,
+        startTime: m.startTime,
+        endTime: m.endTime,
+        data: m as any,
+      })) as any,
       transcript.durationSeconds || 180
     );
 
-    // Step 5: Persist aggregates
+    // Step 5: Persist aggregates + auxiliary metrics
     await prisma.callAggregate.create({
       data: {
         callId,
-        features: aggregates as any,
+        features: {
+          ...aggregates,
+          auxiliary_metrics: auxiliaryMetrics,
+        } as any,
       },
     });
 
@@ -108,7 +131,7 @@ export async function processCall(callId: string): Promise<PipelineResult> {
     return {
       callId,
       status: "complete",
-      signalCount: signals.length,
+      signalCount: merged.agent_markers.length,
     };
   } catch (error) {
     console.error(`[${callId}] Pipeline error:`, error);

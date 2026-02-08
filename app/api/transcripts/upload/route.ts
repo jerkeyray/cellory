@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/app/lib/prisma";
 import { transcribeAudio, validateAudioFile } from "@/app/lib/whisper";
+import { addSpeakerLabels } from "@/app/lib/diarization";
 
 export async function POST(request: NextRequest) {
   try {
@@ -73,11 +74,14 @@ async function processTranscription(transcriptId: string, file: File) {
     // Transcribe audio
     const result = await transcribeAudio(file);
 
+    // Add speaker labels (Agent/Customer)
+    const labeledTranscript = await addSpeakerLabels(result.text);
+
     // Update transcript with results
     await prisma.transcript.update({
       where: { id: transcriptId },
       data: {
-        content: result.text,
+        content: labeledTranscript,
         durationSeconds: Math.round(result.duration),
         wordTimestamps: result.wordTimestamps || [],
         language: result.language,

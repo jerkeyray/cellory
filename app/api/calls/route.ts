@@ -74,19 +74,12 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { transcriptId, outcome } = body;
+    const { transcriptId } = body;
 
     // Validate
-    if (!transcriptId || !outcome) {
+    if (!transcriptId) {
       return NextResponse.json(
-        { error: "Missing transcriptId or outcome" },
-        { status: 400 }
-      );
-    }
-
-    if (outcome !== "success" && outcome !== "failure") {
-      return NextResponse.json(
-        { error: "Outcome must be 'success' or 'failure'" },
+        { error: "Missing transcriptId" },
         { status: 400 }
       );
     }
@@ -110,11 +103,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create call
+    // Create call with placeholder outcome (will be auto-determined)
     const call = await prisma.call.create({
       data: {
         transcriptId,
-        outcome,
+        outcome: "success", // Placeholder, will be updated by AI
         status: "pending",
       },
     });

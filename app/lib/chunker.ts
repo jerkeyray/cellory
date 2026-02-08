@@ -98,7 +98,7 @@ function chunkWithEstimatedTiming(content: string, duration: number): Chunk[] {
   const overlapWords = Math.ceil(wordsPerSecond * OVERLAP_DURATION);
 
   const chunks: Chunk[] = [];
-  let chunkIndex = 0;
+  let chunkIndex = 0
   let wordIndex = 0;
 
   while (wordIndex < words.length) {

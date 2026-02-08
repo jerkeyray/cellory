@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 interface Transcript {
@@ -16,14 +17,38 @@ interface Transcript {
 }
 
 export default function TranscriptsPage() {
+  const router = useRouter();
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadedId, setUploadedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTranscripts();
   }, []);
+
+  // Poll for transcript completion and redirect
+  useEffect(() => {
+    if (!uploadedId) return;
+
+    const interval = setInterval(async () => {
+      const res = await fetch(`/api/transcripts/${uploadedId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === "ready") {
+          clearInterval(interval);
+          router.push(`/transcripts/${uploadedId}`);
+        } else if (data.status === "error") {
+          clearInterval(interval);
+          setError("Transcription failed");
+          setUploadedId(null);
+        }
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [uploadedId, router]);
 
   const fetchTranscripts = async () => {
     try {
@@ -59,8 +84,13 @@ export default function TranscriptsPage() {
         throw new Error(data.error || "Upload failed");
       }
 
+      const result = await res.json();
+
       // Refresh transcripts list
       await fetchTranscripts();
+
+      // Start polling for completion
+      setUploadedId(result.id);
     } catch (err: any) {
       setError(err.message || "Upload failed");
     } finally {
@@ -108,7 +138,7 @@ export default function TranscriptsPage() {
   if (loading) {
     return (
       <div className="flex min-h-[calc(100vh-73px)] items-center justify-center">
-        <div className="text-[#666] dark:text-[#999]">Loading transcripts...</div>
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#ff6b35] border-t-transparent" />
       </div>
     );
   }
@@ -128,13 +158,13 @@ export default function TranscriptsPage() {
           </div>
 
           {/* Upload Button */}
-          <label className="cursor-pointer rounded-lg bg-[#ff6b35] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#e55a2b]">
-            {uploading ? "Uploading..." : "Upload Audio"}
+          <label className={`cursor-pointer rounded-lg bg-[#ff6b35] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#e55a2b] ${uploading || uploadedId ? "opacity-50 cursor-not-allowed" : ""}`}>
+            {uploadedId ? "Processing..." : uploading ? "Uploading..." : "Upload Audio"}
             <input
               type="file"
               accept=".wav,.mp3,.m4a"
               onChange={handleFileUpload}
-              disabled={uploading}
+              disabled={uploading || !!uploadedId}
               className="hidden"
             />
           </label>

@@ -21,7 +21,6 @@ export default function NewCallPage() {
   const [selectedTranscriptId, setSelectedTranscriptId] = useState<string>(
     preselectedTranscriptId || ""
   );
-  const [outcome, setOutcome] = useState<"success" | "failure" | "">("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,8 +46,8 @@ export default function NewCallPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedTranscriptId || !outcome) {
-      setError("Please select a transcript and outcome");
+    if (!selectedTranscriptId) {
+      setError("Please select a transcript");
       return;
     }
 
@@ -61,7 +60,6 @@ export default function NewCallPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           transcriptId: selectedTranscriptId,
-          outcome,
         }),
       });
 
@@ -91,7 +89,7 @@ export default function NewCallPage() {
   if (loading) {
     return (
       <div className="flex min-h-[calc(100vh-73px)] items-center justify-center">
-        <div className="text-[#666] dark:text-[#999]">Loading...</div>
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#ff6b35] border-t-transparent" />
       </div>
     );
   }
@@ -125,7 +123,7 @@ export default function NewCallPage() {
             New Call Analysis
           </h1>
           <p className="mt-2 text-sm text-[#666] dark:text-[#999]">
-            Select a transcript and outcome to analyze
+            Select a transcript to analyze. AI will determine success/failure automatically.
           </p>
         </div>
 
@@ -193,68 +191,26 @@ export default function NewCallPage() {
             )}
           </div>
 
-          {/* Outcome Selection */}
-          <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-            <label className="mb-3 block text-sm font-semibold text-[#1a1a1a] dark:text-white">
-              Call Outcome
-            </label>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label
-                className={`flex cursor-pointer items-center justify-center rounded-lg border p-4 transition-all ${
-                  outcome === "success"
-                    ? "border-green-500 bg-green-50 dark:bg-green-950"
-                    : "border-[#e5e5e5] hover:border-green-500 dark:border-[#2a2a2a]"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="outcome"
-                  value="success"
-                  checked={outcome === "success"}
-                  onChange={(e) => setOutcome(e.target.value as "success")}
-                  className="mr-3 h-4 w-4 accent-green-500"
-                />
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">✓</span>
-                  <span className="font-medium text-[#1a1a1a] dark:text-white">
-                    Success
-                  </span>
-                </div>
-              </label>
-
-              <label
-                className={`flex cursor-pointer items-center justify-center rounded-lg border p-4 transition-all ${
-                  outcome === "failure"
-                    ? "border-red-500 bg-red-50 dark:bg-red-950"
-                    : "border-[#e5e5e5] hover:border-red-500 dark:border-[#2a2a2a]"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="outcome"
-                  value="failure"
-                  checked={outcome === "failure"}
-                  onChange={(e) => setOutcome(e.target.value as "failure")}
-                  className="mr-3 h-4 w-4 accent-red-500"
-                />
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">✗</span>
-                  <span className="font-medium text-[#1a1a1a] dark:text-white">
-                    Failure
-                  </span>
-                </div>
-              </label>
+          {/* AI Info */}
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950">
+            <div className="flex gap-3">
+              <svg className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="text-sm text-blue-800 dark:text-blue-200">
+                <p className="font-medium mb-1">AI-Powered Analysis</p>
+                <p>The system will automatically determine call success/failure based on markers like commitments, blockers, and resolutions detected in the transcript.</p>
+              </div>
             </div>
           </div>
 
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={submitting || !selectedTranscriptId || !outcome}
+            disabled={submitting || !selectedTranscriptId}
             className="w-full rounded-lg bg-[#ff6b35] px-4 py-3 font-medium text-white transition-colors hover:bg-[#e55a2b] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {submitting ? "Starting Analysis..." : "Start Analysis"}
+            {submitting ? "Starting Analysis..." : "Analyze Call"}
           </button>
 
           <p className="text-center text-xs text-[#999] dark:text-[#666]">
