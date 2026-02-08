@@ -1,0 +1,169 @@
+// Cellory — Prisma schema (Neon Postgres)
+// Data model per PRD §5
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum TranscriptStatus {
+  processing
+  ready
+  error
+
+  @@map("transcript_status")
+}
+
+enum CallOutcome {
+  success
+  failure
+
+  @@map("call_outcome")
+}
+
+enum CallStatus {
+  pending
+  extracting
+  aggregating
+  complete
+  error
+
+  @@map("call_status")
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+model Transcript {
+  id                String           @id @default(uuid())
+  filename          String
+  content           String           @db.Text
+  durationSeconds   Int?
+  wordTimestamps    Json?
+  status            TranscriptStatus @default(processing)
+  createdAt         DateTime         @default(now())
+
+  calls             Call[]
+
+  @@map("transcripts")
+}
+
+model Call {
+  id                 String      @id @default(uuid())
+  transcriptId       String      @map("transcript_id")
+  outcome           CallOutcome
+  backboardThreadId String?     @map("backboard_thread_id")
+  status            CallStatus  @default(pending)
+  createdAt         DateTime    @default(now()) @map("created_at")
+
+  transcript   Transcript      @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+  signals      CallSignal[]
+  aggregates   CallAggregate[]
+
+  @@map("calls")
+}
+
+model CallSignal {
+  id          String   @id @default(uuid())
+  callId      String   @map("call_id")
+  chunkIndex  Int      @map("chunk_index")
+  signalType  String   @map("signal_type")
+  signalData  Json     @map("signal_data")
+  confidence  Float
+  startTime   Float    @map("start_time")
+  endTime     Float    @map("end_time")
+
+  call Call @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@map("call_signals")
+}
+
+model CallAggregate {
+  id         String   @id @default(uuid())
+  callId     String   @map("call_id")
+  features   Json
+  computedAt DateTime @default(now()) @map("computed_at")
+
+  call Call @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@map("call_aggregates")
+}
+
+model Playbook {
+  id                   String   @id @default(uuid())
+  title                String
+  content              String   @db.Text
+  callCount            Int      @map("call_count")
+  confidenceScores     Json?    @map("confidence_scores")
+  backboardDocumentId  String?   @map("backboard_document_id")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  @@map("playbooks")
+}
+
+// ---------------------------------------------------------------------------
+// Auth.js / NextAuth (Prisma Adapter)
+// ---------------------------------------------------------------------------
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String  @unique @map("session_token")
+  userId       String  @map("user_id")
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+
+  accounts Account[]
+  sessions Session[]
+
+  @@map("users")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+  @@map("verification_tokens")
+}
