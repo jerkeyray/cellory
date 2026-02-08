@@ -50,6 +50,8 @@ model Transcript {
   content           String           @db.Text
   durationSeconds   Int?
   wordTimestamps    Json?
+  language          String?
+  qualityScore      Float?           @map("quality_score")
   status            TranscriptStatus @default(processing)
   createdAt         DateTime         @default(now())
 
