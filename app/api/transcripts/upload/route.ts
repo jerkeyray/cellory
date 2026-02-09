@@ -152,14 +152,21 @@ async function processTranscription(transcriptId: string, file: File) {
         audioBitrate: audioMetadata.bitrate,
 
         // Whisper segments and quality
-        whisperSegments: result.segments || [],
+        whisperSegments: (result.segments?.map((segment) => ({
+          start: segment.start,
+          end: segment.end,
+          text: segment.text,
+          avg_logprob: segment.avg_logprob,
+          compression_ratio: segment.compression_ratio,
+          no_speech_prob: segment.no_speech_prob,
+        })) || []) as any,
         avgConfidence: qualityScore.confidence,
         speechRatio: qualityScore.speechRatio,
         languageConfidence: null, // Whisper doesn't provide this in current API
         qualityScore: qualityScore.overall,
 
         // Structured diarization
-        diarizationSegments: diarizationSegments,
+        diarizationSegments: diarizationSegments as any,
         speakerCount: speakerCount,
 
         status: "ready",

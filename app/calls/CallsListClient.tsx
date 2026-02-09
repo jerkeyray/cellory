@@ -12,6 +12,7 @@ interface Call {
   transcript: {
     filename: string;
     durationSeconds: number | null;
+    qualityScore: number | null;
   };
   tags: Array<{
     id: string;
