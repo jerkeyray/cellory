@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/app/lib/prisma";
+import WorkflowGuide from "./components/WorkflowGuide";
 
 export default async function Home() {
   const session = await auth();
@@ -157,7 +158,47 @@ export default async function Home() {
             </div>
           </div>
         </div>
+
+        {/* Quick Actions */}
+        {(transcriptsCount === 0 || callsCount === 0) && (
+          <div className="mt-16 rounded-xl border border-blue-200 bg-blue-50 p-6 dark:border-blue-900 dark:bg-blue-950">
+            <h3 className="font-semibold text-blue-900 dark:text-blue-100">
+              👋 Welcome to Cellory!
+            </h3>
+            <p className="mt-2 text-sm text-blue-800 dark:text-blue-200">
+              {transcriptsCount === 0
+                ? "Get started by uploading your first call recording. We'll transcribe it and extract behavioral signals automatically."
+                : "Great! Now analyze your transcripts to extract insights and patterns."}
+            </p>
+            <Link
+              href={transcriptsCount === 0 ? "/transcripts" : "/calls/new"}
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            >
+              {transcriptsCount === 0 ? "Upload First Recording" : "Analyze Transcripts"}
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </Link>
+          </div>
+        )}
       </div>
+
+      {/* Workflow Guide */}
+      <WorkflowGuide
+        transcriptsCount={transcriptsCount}
+        callsCount={callsCount}
+        playbooksCount={playbooksCount}
+      />
     </div>
   );
 }

@@ -1,8 +1,15 @@
 import { auth, signOut } from "@/auth";
 import Link from "next/link";
+import QuickActionsMenu from "./QuickActionsMenu";
 
 export default async function Navbar() {
-  const session = await auth();
+  let session = null;
+  try {
+    session = await auth();
+  } catch (err) {
+    console.error("[navbar] auth() failed:", err);
+    session = null;
+  }
 
   if (!session?.user) {
     return null;
@@ -52,6 +59,8 @@ export default async function Navbar() {
 
         {/* User Menu */}
         <div className="ml-auto flex items-center gap-4">
+          <QuickActionsMenu />
+
           <div className="flex items-center gap-3">
             {session.user.image && (
               <img
