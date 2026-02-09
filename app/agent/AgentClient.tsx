@@ -133,57 +133,24 @@ export default function AgentClient({ playbooks }: AgentClientProps) {
     <div className="rounded-2xl border border bg-white p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Voice Agent</h2>
+          <h2 className="text-lg font-semibold text-foreground">Agent Context</h2>
           <p className="text-sm text-muted-foreground">
-            Start a private ElevenLabs agent session and generate a demo transcript.
+            Paste your playbook markdown, send it as context, then talk to the agent.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {status !== "connected" ? (
-            <button
-              onClick={startSession}
-              className="rounded-lg bg-[#ff6b35] px-4 py-2 text-sm font-medium text-white hover:bg-[#e55a2b]"
-            >
-              Start Session
-            </button>
-          ) : (
-            <button
-              onClick={endSession}
-              className="rounded-lg border px-4 py-2 text-sm font-medium text-foreground"
-            >
-              End Session
-            </button>
-          )}
           <button
             onClick={clearTranscript}
-            className="rounded-lg border px-4 py-2 text-sm font-medium text-foreground"
+            className="rounded-lg border px-3 py-2 text-sm font-medium text-foreground"
           >
-            Clear
+            Clear Chat
           </button>
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border bg-white p-4">
-          <div className="mb-3 text-sm font-medium text-foreground">Live Transcript</div>
-          <div className="h-72 overflow-auto rounded-lg border border bg-background p-3 text-sm">
-            {messages.length === 0 ? (
-              <div className="text-muted-foreground">No messages yet.</div>
-            ) : (
-              messages.map((m, i) => (
-                <div key={`${m.role}-${i}`} className="mb-2">
-                  <span className="font-medium text-foreground">
-                    {m.role === "agent" ? "Agent" : "Customer"}:
-                  </span>{" "}
-                  <span className="text-muted-foreground">{m.text}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        <div className="rounded-xl border border bg-white p-4">
-          <div className="mb-3 text-sm font-medium text-foreground">Playbook Context</div>
+      <div className="mt-6 grid gap-6 lg:grid-cols-5">
+        <div className="rounded-xl border border bg-white p-4 lg:col-span-3">
+          <div className="mb-3 text-sm font-medium text-foreground">Playbook Markdown</div>
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <select
               value={selectedPlaybookId}
@@ -207,7 +174,8 @@ export default function AgentClient({ playbooks }: AgentClientProps) {
           <textarea
             value={contextText}
             onChange={(e) => setContextText(e.target.value)}
-            className="h-72 w-full resize-none rounded-lg border border bg-background p-3 text-sm text-muted-foreground"
+            className="h-80 w-full resize-none rounded-lg border border bg-background p-3 text-sm text-muted-foreground"
+            placeholder="Paste playbook markdown here..."
           />
           <div className="mt-3 flex items-center justify-between">
             <div className="text-xs text-muted-foreground">
@@ -221,6 +189,79 @@ export default function AgentClient({ playbooks }: AgentClientProps) {
               Send Context
             </button>
           </div>
+        </div>
+
+        <div className="rounded-xl border border bg-white p-4 lg:col-span-2">
+          <div className="mb-3 text-sm font-medium text-foreground">Voice Session</div>
+          <div className="flex flex-col items-center justify-center gap-4 py-6">
+            <div className="relative flex h-40 w-40 items-center justify-center">
+              <span
+                className={`absolute h-40 w-40 rounded-full ${
+                  status === "connected" ? "bg-[#ff6b35]/10" : "bg-[#1a1a1a]/5"
+                }`}
+              />
+              <span
+                className={`absolute h-32 w-32 rounded-full ${
+                  status === "connected"
+                    ? "animate-ping bg-[#ff6b35]/20"
+                    : "bg-transparent"
+                }`}
+              />
+              <span
+                className={`absolute h-24 w-24 rounded-full ${
+                  status === "connected"
+                    ? "animate-ping bg-[#ff6b35]/30 [animation-delay:300ms]"
+                    : "bg-transparent"
+                }`}
+              />
+              <button
+                onClick={status !== "connected" ? startSession : endSession}
+                className={`relative z-10 flex h-20 w-20 items-center justify-center rounded-full text-sm font-semibold ${
+                  status === "connected"
+                    ? "bg-[#1a1a1a] text-white"
+                    : "bg-[#ff6b35] text-white hover:bg-[#e55a2b]"
+                }`}
+              >
+                {status === "connected" ? "Stop" : "Talk"}
+              </button>
+            </div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground">
+              {status === "connected"
+                ? "Connected"
+                : status === "connecting"
+                ? "Connecting"
+                : "Idle"}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-xl border border bg-white p-4">
+        <div className="mb-3 text-sm font-medium text-foreground">Conversation</div>
+        <div className="h-64 overflow-auto rounded-lg border border bg-background p-3 text-sm">
+          {messages.length === 0 ? (
+            <div className="text-muted-foreground">No messages yet.</div>
+          ) : (
+            messages.map((m, i) => (
+              <div
+                key={`${m.role}-${i}`}
+                className={`mb-3 flex ${m.role === "agent" ? "justify-start" : "justify-end"}`}
+              >
+                <div
+                  className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
+                    m.role === "agent"
+                      ? "bg-white text-foreground shadow-sm"
+                      : "bg-[#1a1a1a] text-white"
+                  }`}
+                >
+                  <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                    {m.role === "agent" ? "Agent" : "Customer"}
+                  </div>
+                  <div>{m.text}</div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

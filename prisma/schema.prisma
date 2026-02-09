@@ -57,6 +57,25 @@ model Transcript {
   status            TranscriptStatus @default(processing)
   createdAt         DateTime         @default(now())
 
+  // Audio metadata
+  audioFormat       String?          @map("audio_format")
+  audioSampleRate   Int?             @map("audio_sample_rate")
+  audioChannels     Int?             @map("audio_channels")
+  audioBitrate      Int?             @map("audio_bitrate")
+
+  // Whisper segment quality data
+  whisperSegments   Json?            @map("whisper_segments")
+  avgConfidence     Float?           @map("avg_confidence")
+  speechRatio       Float?           @map("speech_ratio")
+  languageConfidence Float?          @map("language_confidence")
+
+  // Structured diarization
+  diarizationSegments Json?          @map("diarization_segments")
+  speakerCount      Int?             @map("speaker_count")
+
+  // NLU
+  nluResults        Json?            @map("nlu_results")
+
   user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   calls             Call[]
 

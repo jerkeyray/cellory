@@ -32,6 +32,18 @@ export async function GET(
             durationSeconds: true,
             language: true,
             createdAt: true,
+            // Audio intelligence fields
+            qualityScore: true,
+            audioFormat: true,
+            audioSampleRate: true,
+            audioChannels: true,
+            audioBitrate: true,
+            speechRatio: true,
+            avgConfidence: true,
+            diarizationSegments: true,
+            speakerCount: true,
+            nluResults: true,
+            whisperSegments: true,
           },
         },
         signals: {

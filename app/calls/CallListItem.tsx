@@ -13,6 +13,7 @@ interface CallListItemProps {
     transcript: {
       filename: string;
       durationSeconds: number | null;
+      qualityScore: number | null;
     };
     tags: Array<{
       id: string;
@@ -54,6 +55,25 @@ function getOutcomeBadge(outcome: string) {
   ) : (
     <span className="inline-flex items-center gap-1 text-sm font-medium text-red-600">
       Failure
+    </span>
+  );
+}
+
+function getQualityDot(qualityScore: number | null) {
+  if (qualityScore === null || qualityScore === undefined) {
+    return null;
+  }
+
+  const color =
+    qualityScore >= 0.7
+      ? "bg-green-500"
+      : qualityScore >= 0.4
+      ? "bg-yellow-500"
+      : "bg-red-500";
+
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className={`h-2 w-2 rounded-full ${color}`} title={`Quality: ${Math.round(qualityScore * 100)}%`} />
     </span>
   );
 }
@@ -119,6 +139,7 @@ export default function CallListItem({ call }: CallListItemProps) {
               <div className="flex items-center gap-3">
                 {getOutcomeBadge(call.outcome)}
                 {getStatusBadge(call.status)}
+                {getQualityDot(call.transcript.qualityScore)}
               </div>
               <h3 className="mt-2 text-lg font-semibold text-foreground">
                 {call.transcript.filename}

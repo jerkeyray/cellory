@@ -25,6 +25,7 @@ interface Transcript {
   status: "processing" | "ready" | "error";
   durationSeconds: number | null;
   language: string | null;
+  qualityScore: number | null;
   createdAt: string;
   mostRecentCallId: string | null;
   _count: {
@@ -89,6 +90,28 @@ export default function TranscriptsClient({ transcripts }: TranscriptsClientProp
   const isAnalyzed = (transcript: Transcript) => transcript._count.calls > 0;
   const canSelect = (transcript: Transcript) =>
     transcript.status === "ready" && !isAnalyzed(transcript);
+
+  const getQualityDot = (qualityScore: number | null) => {
+    if (qualityScore === null || qualityScore === undefined) {
+      return null;
+    }
+
+    const color =
+      qualityScore >= 0.7
+        ? "bg-green-500"
+        : qualityScore >= 0.4
+        ? "bg-yellow-500"
+        : "bg-red-500";
+
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className={`h-2 w-2 rounded-full ${color}`} />
+        <span className="text-xs text-muted-foreground">
+          Quality: {Math.round(qualityScore * 100)}%
+        </span>
+      </div>
+    );
+  };
 
   const handleDelete = (e: React.MouseEvent, transcriptId: string) => {
     e.preventDefault();
@@ -247,6 +270,7 @@ export default function TranscriptsClient({ transcripts }: TranscriptsClientProp
                             ? `${transcript._count.calls} analysis`
                             : "Not analyzed"}
                         </span>
+                        {transcript.qualityScore !== null && transcript.qualityScore !== undefined && getQualityDot(transcript.qualityScore)}
                       </div>
                     </div>
                     <div className="flex items-center gap-4 flex-shrink-0">

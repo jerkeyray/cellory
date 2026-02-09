@@ -14,7 +14,14 @@ export default async function TranscriptsPage() {
   // Fetch transcripts server-side with most recent call ID
   const transcripts = await prisma.transcript.findMany({
     where: { userId: session.user.id },
-    include: {
+    select: {
+      id: true,
+      filename: true,
+      status: true,
+      durationSeconds: true,
+      language: true,
+      qualityScore: true,
+      createdAt: true,
       _count: {
         select: { calls: true },
       },

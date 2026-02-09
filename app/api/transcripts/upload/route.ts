@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/app/lib/prisma";
 import { transcribeAudio, validateAudioFile } from "@/app/lib/whisper";
-import { addSpeakerLabels } from "@/app/lib/diarization";
+import {
+  addSpeakerLabels,
+  addSpeakerLabelsStructured,
+} from "@/app/lib/diarization";
+import { extractAudioMetadata } from "@/app/lib/audio-metadata";
+import { computeQualityScore } from "@/app/lib/audio-quality";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -92,16 +97,45 @@ export async function POST(request: Request) {
  */
 async function processTranscription(transcriptId: string, file: File) {
   try {
-    // Transcribe audio
+    // Step 1: Extract audio metadata (zero cost)
+    console.log(`[${transcriptId}] Extracting audio metadata...`);
+    const audioMetadata = await extractAudioMetadata(file);
+
+    // Step 2: Transcribe audio (captures segments now)
+    console.log(`[${transcriptId}] Transcribing audio...`);
     const result = await transcribeAudio(file);
 
-    // Add speaker labels (Agent/Customer)
+    // Step 3: Compute quality score (zero cost, pure computation)
+    console.log(`[${transcriptId}] Computing quality score...`);
+    const qualityScore = computeQualityScore(
+      result.segments || [],
+      audioMetadata,
+      result.duration
+    );
+
+    // Step 4: Add speaker labels for content string (existing)
+    console.log(`[${transcriptId}] Adding speaker labels...`);
     const labeledTranscript = await addSpeakerLabels(result.text);
 
-    // Calculate word count
-    const wordCount = labeledTranscript.split(/\s+/).filter(w => w.length > 0).length;
+    // Step 5: Add structured speaker labels with timestamps (new)
+    console.log(`[${transcriptId}] Creating structured diarization...`);
+    const diarizationSegments = await addSpeakerLabelsStructured(
+      result.text,
+      result.wordTimestamps || []
+    );
 
-    // Update transcript with results
+    // Count unique speakers
+    const speakerCount = new Set(
+      diarizationSegments.map((s) => s.speaker)
+    ).size;
+
+    // Calculate word count
+    const wordCount = labeledTranscript
+      .split(/\s+/)
+      .filter((w) => w.length > 0).length;
+
+    // Step 6: Update transcript with all results
+    console.log(`[${transcriptId}] Persisting results...`);
     await prisma.transcript.update({
       where: { id: transcriptId },
       data: {
@@ -110,11 +144,29 @@ async function processTranscription(transcriptId: string, file: File) {
         wordTimestamps: result.wordTimestamps || [],
         language: result.language,
         wordCount: wordCount,
+
+        // Audio metadata
+        audioFormat: audioMetadata.format,
+        audioSampleRate: audioMetadata.sampleRate,
+        audioChannels: audioMetadata.channels,
+        audioBitrate: audioMetadata.bitrate,
+
+        // Whisper segments and quality
+        whisperSegments: result.segments || [],
+        avgConfidence: qualityScore.confidence,
+        speechRatio: qualityScore.speechRatio,
+        languageConfidence: null, // Whisper doesn't provide this in current API
+        qualityScore: qualityScore.overall,
+
+        // Structured diarization
+        diarizationSegments: diarizationSegments,
+        speakerCount: speakerCount,
+
         status: "ready",
       },
     });
 
-    console.log(`Transcription completed for ${transcriptId}`);
+    console.log(`[${transcriptId}] Transcription completed!`);
   } catch (error) {
     console.error(`Transcription failed for ${transcriptId}:`, error);
 

@@ -13,25 +13,42 @@ Cellory turns call recordings into decision-grade intelligence for revenue, coll
 ## How It Works
 
 ```
-Upload Recording → Transcribe (Whisper) → Chunk → Extract Markers (GPT-4o) → Aggregate → Compare Outcomes → Generate Playbook
+Upload Recording → Audio Intelligence → Transcribe (Whisper) → Chunk → Extract Markers + NLU (GPT-4o-mini) → Aggregate → Compare Outcomes → Generate Playbook
 ```
 
-1. **Upload** — Drop call recordings (WAV, MP3, M4A) into the Recordings section. Whisper transcribes and extracts audio metadata automatically.
-2. **Extract** — Transcripts are chunked and processed by GPT-4o to extract structured behavioral markers (objections, escalations, agreements, resolution attempts, commitments).
-3. **Aggregate** — Markers are merged deterministically into outcome-level metrics. No LLM variability in this step.
-4. **Compare** — Success vs failure aggregates are compared to surface statistically meaningful differences.
-5. **Remember** — Summaries are persisted to Backboard for cross-call context that compounds over time.
-6. **Generate** — Coaching playbooks are produced from outcome deltas enriched with historical memory.
+1. **Upload** — Drop call recordings (WAV, MP3, M4A) into the Recordings section. Automatic audio quality scoring and metadata extraction.
+2. **Transcribe** — Whisper transcribes with financial vocabulary optimization. Captures segment-level quality metrics and structured speaker diarization with timestamps.
+3. **Extract** — Transcripts are chunked and processed by GPT-4o-mini to extract:
+   - **Behavioral markers** (constraints, strategies, control dynamics, commitments)
+   - **NLU markers** (intents, obligations, regulatory phrases, entities)
+4. **Aggregate** — Markers are merged deterministically into outcome-level metrics. No LLM variability in this step.
+5. **Compare** — Success vs failure aggregates are compared to surface statistically meaningful differences.
+6. **Remember** — Summaries are persisted to Backboard for cross-call context that compounds over time.
+7. **Generate** — Coaching playbooks are produced from outcome deltas enriched with historical memory.
 
 ## Core Features
 
 ### Recording Management
 
-Upload and manage call recordings. Track processing status, batch-analyze multiple recordings, and auto-analyze on upload.
+Upload and manage call recordings. Track processing status, batch-analyze multiple recordings, and auto-analyze on upload. Real-time audio quality scoring with color-coded indicators (green/yellow/red).
+
+### Audio Intelligence Pipeline
+
+- **Quality Scoring** — Automatic assessment of transcription confidence, speech ratio, and compression health from Whisper segment metadata
+- **Financial Vocabulary** — Domain-optimized transcription for collections terminology (FDCPA, mini-Miranda, forbearance, etc.)
+- **Structured Diarization** — Speaker separation with real timestamps, not estimates
+- **Audio Metadata** — Format, sample rate, channels, bitrate extraction
 
 ### Behavioral Marker Extraction
 
 Structured extraction of decision-grade markers: constraints, resolution strategies, control shifts, and commitments. Deterministic aggregation produces auditable feature sets.
+
+### Financial NLU (Natural Language Understanding)
+
+- **Intent Classification** — Identify customer intentions (payment arrangement, dispute, escalation, etc.)
+- **Obligation Detection** — Track promises and commitments with deadlines
+- **Regulatory Compliance** — Verify presence of required disclosures (mini-Miranda, FDCPA, recording notice)
+- **Entity Extraction** — Capture amounts, dates, account numbers, phone numbers automatically
 
 ### Outcome Intelligence
 
@@ -81,7 +98,7 @@ bun run dev
 | `AUTH_SECRET` | Yes | Generate with `npx auth secret` |
 | `AUTH_GOOGLE_ID` | Yes | Google OAuth client ID |
 | `AUTH_GOOGLE_SECRET` | Yes | Google OAuth client secret |
-| `OPENAI_API_KEY` | Yes | OpenAI API key for marker extraction and playbook generation |
+| `OPENAI_API_KEY` | Yes | OpenAI API key for transcription, marker extraction, and playbook generation |
 | `BACKBOARD_API_KEY` | No | Backboard.io API key for persistent cross-call memory |
 
 ### Scripts
@@ -104,7 +121,7 @@ bun run dev
 | UI | React 19, Tailwind CSS 4, Radix UI, shadcn/ui |
 | Database | Neon Postgres + Prisma |
 | Auth | Auth.js (NextAuth v5) with Google OAuth |
-| AI | Vercel AI SDK + OpenAI GPT-4o (extraction) + Whisper (transcription) |
+| AI | Vercel AI SDK + OpenAI GPT-4o-mini (extraction) + GPT-4o (playbooks) + Whisper (transcription) |
 | Memory | Backboard.io (optional, for cross-call RAG) |
 | Charts | Recharts |
 | Deployment | Vercel |
@@ -122,10 +139,10 @@ Backboard serves as an optional persistent memory layer:
 
 | Entity | Purpose |
 |---|---|
-| **Transcript** | Uploaded recording text, audio metadata, and processing state |
+| **Transcript** | Uploaded recording text, audio metadata, quality scores, diarization, and NLU results |
 | **Call** | Analysis unit linked to a transcript and outcome label |
-| **Signal** | Extracted behavioral markers with timestamps and confidence |
-| **Aggregate** | Deterministic features computed from signals |
+| **Signal** | Extracted behavioral markers and NLU insights with timestamps and confidence |
+| **Aggregate** | Deterministic features computed from signals (behavioral + NLU metrics) |
 | **Playbook** | Generated coaching guidance from outcome comparisons |
 
 All data is scoped to the authenticated user.
@@ -144,14 +161,20 @@ app/
   api/                  API routes (calls, transcripts, playbooks, tags, compare)
   lib/                  Pipeline core
     pipeline.ts           Orchestrator — chunking through aggregation
-    signals-v3.ts         GPT-4o marker extraction
-    aggregator-v3.ts      Deterministic signal aggregation
+    signals-v3.ts         GPT-4o-mini behavioral marker extraction
+    nlu-extraction.ts     GPT-4o-mini NLU marker extraction (intents, obligations, regulatory, entities)
+    aggregator-v3.ts      Deterministic signal aggregation (behavioral + NLU)
     comparator.ts         Outcome comparison logic
     playbook-generator.ts Playbook generation with Backboard context
     backboard.ts          Backboard.io integration
-    whisper.ts            Audio transcription
+    whisper.ts            Audio transcription with financial vocabulary
+    diarization.ts        Speaker labeling (text + structured with timestamps)
+    audio-metadata.ts     Audio format/quality extraction
+    audio-quality.ts      Quality scoring from Whisper segments
     chunker.ts            Transcript chunking
     prisma.ts             Database client
+    types/
+      audio-intelligence.ts TypeScript interfaces for audio/NLU features
 components/
   ui/                   shadcn/ui components
   page-header.tsx       Shared page header

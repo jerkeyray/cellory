@@ -11,13 +11,13 @@ Cellory processes call recordings through a two-stage pipeline:
 **Stage 1 — Preparation** (run once per recording):
 
 ```
-Audio File → Whisper API → Speaker Diarization (gpt-4o-mini) → Stored Transcript
+Audio File → Audio Metadata Extraction → Whisper API (financial vocabulary) → Quality Scoring → Speaker Diarization (text + structured) → Stored Transcript
 ```
 
 **Stage 2 — Intelligence Pipeline** (run per analysis):
 
 ```
-Transcript → Chunk (75s windows) → Extract Markers (gpt-4o-mini) → Aggregate (deterministic) → Persist + Backboard
+Transcript → Chunk (75s windows) → Extract Behavioral Markers (gpt-4o-mini) → Extract NLU Markers (gpt-4o-mini) → Aggregate (deterministic) → Persist + Backboard
 ```
 
 **Playbook Generation** (cross-call):
@@ -31,6 +31,190 @@ Key design principles:
 - Aggregation and comparison are pure computation — deterministic, auditable, zero cost
 - Backboard integration is non-blocking and fail-safe
 - Cost discipline: gpt-4o-mini for extraction (~$0.0015/call), gpt-4o only for playbooks
+
+---
+
+## Audio Intelligence Pipeline
+
+The audio intelligence layer processes recordings through multiple stages to extract quality metrics, optimize transcription, and structure speaker data.
+
+### Audio Metadata Extraction
+
+**File:** `app/lib/audio-metadata.ts`
+
+**Function:** `extractAudioMetadata(file: File): Promise<AudioMetadata>`
+
+Uses `music-metadata` package to extract:
+- **Format** — Container/codec (MP3, WAV, M4A, etc.)
+- **Sample Rate** — Hz (e.g., 44100, 48000, 16000)
+- **Channels** — 1 (mono), 2 (stereo)
+- **Bitrate** — Bits per second
+
+**Cost:** $0 (pure computation, no API calls)
+
+### Enhanced Whisper Transcription
+
+**File:** `app/lib/whisper.ts` (updated)
+
+**New features:**
+1. **Segment-level quality data** — Captures `avg_logprob`, `no_speech_prob`, `compression_ratio` per segment
+2. **Financial vocabulary prompt** — Improves accuracy for collections terminology:
+   - FDCPA, mini-Miranda, past-due, delinquent, settlement, payment arrangement
+   - Charge-off, creditor, debtor, validation notice, cease and desist
+   - Hardship, forbearance, APR, principal, collection agency, credit bureau
+3. **Dual granularity** — Word-level AND segment-level timestamps
+
+**API changes:**
+```typescript
+formData.append("timestamp_granularities[]", "word");
+formData.append("timestamp_granularities[]", "segment");
+formData.append("prompt", "[financial vocabulary]");
+```
+
+**Return type extended:**
+```typescript
+interface TranscriptionResult {
+  text: string;
+  duration: number;
+  language: string;
+  wordTimestamps?: Array<{word, start, end}>;
+  segments?: WhisperSegment[];  // NEW
+}
+```
+
+**Cost:** $0 additional (prompt and segment granularity are free)
+
+### Audio Quality Scoring
+
+**File:** `app/lib/audio-quality.ts`
+
+**Function:** `computeQualityScore(segments, metadata, duration?): AudioQualityScore`
+
+Pure computation from Whisper segment metadata:
+
+| Component | Calculation | Range |
+|-----------|-------------|-------|
+| **Confidence** | Normalize `avg_logprob` (-2 to 0) → (0 to 1) | 0–1 |
+| **Speech Ratio** | `1 - avg(no_speech_prob)` | 0–1 |
+| **Compression Health** | Degrade if `compression_ratio` outside [1.0, 3.0] | 0–1 |
+| **Overall** | `0.5×confidence + 0.3×speechRatio + 0.2×compressionHealth` | 0–1 |
+
+**Quality Flags:**
+- `low_confidence` — avg_logprob < -1.0
+- `high_noise` — no_speech_prob > 0.6
+- `poor_compression` — compression_ratio outside healthy range
+- `short_duration` — < 30 seconds
+- `low_sample_rate` — < 16000 Hz
+
+**Cost:** $0 (pure computation)
+
+### Structured Diarization
+
+**File:** `app/lib/diarization.ts`
+
+**New function:** `addSpeakerLabelsStructured(rawTranscript, wordTimestamps): Promise<DiarizationSegment[]>`
+
+Returns array of speaker segments with real timestamps:
+```typescript
+interface DiarizationSegment {
+  speaker: "Agent" | "Customer";
+  text: string;
+  start: number;  // seconds
+  end: number;    // seconds
+}
+```
+
+**Process:**
+1. gpt-4o-mini assigns speaker labels + approximate word indices
+2. Map word indices to actual timestamps from Whisper
+3. Return structured segments
+
+**Cost:** ~$0.0005 per transcript (same as text-only diarization)
+
+---
+
+## NLU Extraction
+
+**File:** `app/lib/nlu-extraction.ts`
+
+Extracts financial domain NLU markers using gpt-4o-mini with Zod-validated structured output. Same pattern as `signals-v3.ts`.
+
+### Model configuration
+
+- **Model:** `gpt-4o-mini`
+- **Temperature:** 0
+- **Batch processing:** Sequential with 100ms delay
+
+### Marker types
+
+#### Intent Classification
+
+Identifies customer and agent intentions per speaking turn.
+
+```typescript
+{
+  intent: "payment_arrangement" | "dispute" | "information_request" |
+          "callback_request" | "escalation" | "compliance_concern" | "settlement_offer";
+  speaker: "Agent" | "Customer";
+  description: string;
+  time: number;
+  confidence: number;
+}
+```
+
+#### Obligation Detection
+
+Tracks promises, commitments, and action items.
+
+```typescript
+{
+  obligation_type: "promise_to_pay" | "callback_commitment" | "document_provision" |
+                   "escalation_promise" | "review_commitment";
+  obligor: "Agent" | "Customer";
+  deadline: string | null;  // Extracted text like "tomorrow", "January 15th"
+  description: string;
+  time: number;
+  confidence: number;
+}
+```
+
+#### Regulatory Phrase Detection
+
+Verifies compliance language presence.
+
+```typescript
+{
+  regulation_type: "mini_miranda" | "fdcpa_disclosure" | "recording_notice" |
+                   "cease_communication" | "dispute_rights" | "validation_notice";
+  present: boolean;
+  verbatim: string;      // Exact text found (or expected text if missing)
+  time: number | null;
+  confidence: number;
+}
+```
+
+#### Entity Extraction
+
+Captures structured data mentions.
+
+```typescript
+{
+  entity_type: "amount" | "date" | "account_number" | "phone_number" | "reference_number";
+  value: string;
+  time: number;
+  confidence: number;
+}
+```
+
+### Key functions
+
+**`extractNLUMarkers(chunkText, startTime, endTime)`** — Extracts NLU markers from a single chunk.
+
+**`extractNLUMarkersBatch(chunks)`** — Sequential batch processing.
+
+**`mergeNLUResults(results): NLUResults`** — Deduplicates regulatory phrases, concatenates all others.
+
+**Cost:** ~$0.0012 per 5-minute call (same cost structure as behavioral extraction)
 
 ---
 
@@ -48,12 +232,15 @@ Orchestrates the full analysis pipeline for a single call:
 | 2 | `chunkTranscript()` | No | Split transcript into 75s windows with 10s overlap |
 | 3 | `extractMarkersBatchV3()` | gpt-4o-mini | Extract behavioral markers per chunk |
 | 4 | `mergeExtractionResultsV3()` | No | Combine chunk results, take final outcome prediction |
-| 5 | Persist signals | No | Create `CallSignal` records in database |
-| 6 | Auto-set outcome | No | Update `Call.outcome` from AI prediction |
-| 7 | `aggregateSignalsV3()` | No | Compute deterministic features from markers |
-| 8 | Persist aggregates | No | Create `CallAggregate` record |
-| 9 | `sendToBackboard()` | No | Non-blocking memory write |
-| 10 | Invalidate cache | No | Clear comparison cache for user |
+| 5 | Auto-set outcome | No | Update `Call.outcome` from AI prediction |
+| 6 | `extractNLUMarkersBatch()` | gpt-4o-mini | Extract NLU markers (intents, obligations, regulatory, entities) |
+| 7 | `mergeNLUResults()` | No | Combine NLU results, deduplicate regulatory phrases |
+| 8 | Persist signals | No | Create `CallSignal` records (behavioral + NLU) |
+| 9 | Persist NLU on transcript | No | Store `nluResults` JSON on transcript for quick access |
+| 10 | `aggregateSignalsV3()` | No | Compute deterministic features from markers + NLU |
+| 11 | Persist aggregates | No | Create `CallAggregate` record |
+| 12 | `sendToBackboard()` | No | Non-blocking memory write |
+| 13 | Invalidate cache | No | Clear comparison cache for user |
 
 ### Status transitions
 
@@ -282,6 +469,13 @@ Pure computation. Zero LLM calls. Converts extracted markers into a deterministi
   commitment_after_unresolved_constraint: boolean;  // RED FLAG
   avg_time_from_last_constraint: number | null;
 
+  // --- NLU ---
+  intent_distribution: Record<string, number>;     // {payment_arrangement: 2, dispute: 1}
+  obligation_count: number;
+  obligations_with_deadlines: number;
+  regulatory_compliance_score: number;              // % of expected phrases present
+  entity_count: number;
+
   // --- Auxiliary ---
   predicted_outcome: string | null;
   outcome_confidence: number | null;
@@ -298,6 +492,11 @@ Pure computation. Zero LLM calls. Converts extracted markers into a deterministi
 | `agent_control_ratio` | Count of `agent_in_control` events / total control events. |
 | `control_recovery_before_commitment` | Last `control_recovery` timestamp < first `commitment_quality` timestamp. |
 | `commitment_after_unresolved_constraint` | Any commitment exists AND unresolved constraints > 0. This is a red flag — committing before resolving concerns. |
+| `intent_distribution` | Count of each intent type across all NLU markers. |
+| `obligation_count` | Total obligations detected. |
+| `obligations_with_deadlines` | Count of obligations with non-null deadline. |
+| `regulatory_compliance_score` | Percentage of expected regulatory phrases present (mini_miranda, fdcpa_disclosure, recording_notice). |
+| `entity_count` | Total entities extracted (amounts, dates, account numbers, etc.). |
 
 ### Legacy aggregator
 
@@ -577,10 +776,22 @@ User
 | `durationSeconds` | Int? | Audio duration |
 | `wordTimestamps` | Json? | `Array<{word, start, end}>` from Whisper |
 | `language` | String? | Detected language code |
-| `qualityScore` | Float? | Transcription confidence proxy |
+| `qualityScore` | Float? | Overall audio quality score (0–1) |
 | `wordCount` | Int? | Pre-computed for display |
 | `status` | TranscriptStatus | `processing` → `ready` or `error` |
 | `createdAt` | DateTime | Upload time |
+| **Audio Intelligence** |  |  |
+| `audioFormat` | String? | Audio container/codec (MP3, WAV, M4A) |
+| `audioSampleRate` | Int? | Sample rate in Hz |
+| `audioChannels` | Int? | 1 (mono), 2 (stereo) |
+| `audioBitrate` | Int? | Bits per second |
+| `whisperSegments` | Json? | Array of Whisper segments with quality data |
+| `avgConfidence` | Float? | Average confidence from segments (0–1) |
+| `speechRatio` | Float? | Speech vs silence ratio (0–1) |
+| `languageConfidence` | Float? | Language detection confidence |
+| `diarizationSegments` | Json? | Structured speaker segments with timestamps |
+| `speakerCount` | Int? | Number of unique speakers |
+| `nluResults` | Json? | NLU extraction results (intents, obligations, regulatory, entities) |
 
 #### Call
 
@@ -601,7 +812,7 @@ User
 | `id` | String (UUID) | Primary key |
 | `callId` | String | FK to Call |
 | `chunkIndex` | Int | Which 75s chunk produced this signal |
-| `signalType` | String | `customer_constraint`, `agent_response_strategy`, etc. |
+| `signalType` | String | `customer_constraint`, `agent_response_strategy`, `control_dynamics`, `commitment_quality`, `intent_classification`, `obligation_detection`, `regulatory_phrase`, `entity_mention` |
 | `signalData` | Json | Full marker object (typed by `signalType`) |
 | `confidence` | Float | 0–1 extraction confidence |
 | `startTime` | Float | Seconds into call |
@@ -844,14 +1055,18 @@ Functions:
 
 | Operation | Model | Cost | Frequency |
 |-----------|-------|------|-----------|
+| Audio metadata extraction | None | $0 | Once per recording |
 | Transcription | Whisper | ~$0.006/min audio | Once per recording |
-| Speaker labels | gpt-4o-mini | ~$0.0005 | Once per transcript |
-| Marker extraction | gpt-4o-mini | ~$0.0012/chunk | ~4 chunks per 5-min call |
+| Quality scoring | None | $0 | Pure computation |
+| Speaker labels (text) | gpt-4o-mini | ~$0.0005 | Once per transcript |
+| Speaker labels (structured) | gpt-4o-mini | ~$0.0005 | Once per transcript |
+| Behavioral marker extraction | gpt-4o-mini | ~$0.0012/chunk | ~4 chunks per 5-min call |
+| NLU extraction | gpt-4o-mini | ~$0.0012/chunk | ~4 chunks per 5-min call |
 | Aggregation | None | $0 | Pure computation |
 | Comparison | None | $0 | Pure computation |
 | Playbook generation | gpt-4o | ~$0.01–0.03 | Once per generation |
 
-**Total per 5-minute call (extraction only):** ~$0.0015
+**Total per 5-minute call (full pipeline):** ~$0.0027 (transcription + extraction + NLU)
 
 ---
 
