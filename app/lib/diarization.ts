@@ -29,7 +29,6 @@ Output format:
 Agent: [text]
 Customer: [text]`,
       temperature: 0,
-      maxTokens: 2000,
     });
 
     return result.text;

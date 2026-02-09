@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
@@ -40,23 +40,33 @@ export default function CallDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  const [pollInterval, setPollInterval] = useState(5000); // Start at 5s
+  const [pollCount, setPollCount] = useState(0);
 
   useEffect(() => {
     fetchCall();
 
-    // Poll while processing
+    // Poll while processing with exponential backoff
     const interval = setInterval(() => {
       if (call && (call.status === "pending" || call.status === "extracting" || call.status === "aggregating")) {
         fetchCall();
+        setPollCount(prev => prev + 1);
+
+        // Exponential backoff: 5s → 10s after 30s → 15s after 60s
+        if (pollCount > 12) { // After 60s (12 * 5s)
+          setPollInterval(15000);
+        } else if (pollCount > 6) { // After 30s (6 * 5s)
+          setPollInterval(10000);
+        }
       }
-    }, 3000);
+    }, pollInterval);
 
     setRefreshInterval(interval);
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [params.id]);
+  }, [params.id, pollInterval]);
 
   const fetchCall = async () => {
     try {
@@ -76,7 +86,7 @@ export default function CallDetailPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = useCallback((status: string) => {
     const styles = {
       pending: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
       extracting: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -90,9 +100,9 @@ export default function CallDetailPage() {
         {status}
       </span>
     );
-  };
+  }, []);
 
-  const getMarkerColor = (type: string) => {
+  const getMarkerColor = useCallback((type: string) => {
     const colors: Record<string, string> = {
       commitment_event: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
       blocker_event: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
@@ -101,15 +111,15 @@ export default function CallDetailPage() {
       stall_event: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
     };
     return colors[type] || "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
-  };
+  }, []);
 
-  const formatTime = (seconds: number) => {
+  const formatTime = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
+  }, []);
 
-  const formatDate = (date: string) => {
+  const formatDate = useCallback((date: string) => {
     return new Date(date).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -117,7 +127,43 @@ export default function CallDetailPage() {
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
+  }, []);
+
+  const aggregate = call?.aggregates[0]?.features;
+
+  // Memoize transcript lines parsing to avoid re-computation
+  const transcriptLines = useMemo(() => {
+    if (!call) return [];
+
+    return call.transcript.content
+      .split("\n")
+      .filter((line: string) => line.trim())
+      .map((line: string, i: number, arr: string[]) => {
+        const isAgent = line.trim().startsWith("Agent:");
+        const isCustomer = line.trim().startsWith("Customer:");
+
+        if (!isAgent && !isCustomer) return null;
+
+        // Estimate timestamp
+        const estimatedTime = call.transcript.durationSeconds
+          ? Math.floor((i / arr.length) * call.transcript.durationSeconds)
+          : i * 5;
+        const minutes = Math.floor(estimatedTime / 60);
+        const seconds = estimatedTime % 60;
+        const timestamp = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+        const text = line.replace(/^(Agent:|Customer:)\s*/, "");
+
+        return {
+          index: i,
+          isAgent,
+          isCustomer,
+          timestamp,
+          text,
+        };
+      })
+      .filter(Boolean);
+  }, [call]);
 
   if (loading) {
     return (
@@ -140,8 +186,6 @@ export default function CallDetailPage() {
     );
   }
 
-  const aggregate = call.aggregates[0]?.features;
-
   return (
     <div className="min-h-[calc(100vh-73px)] bg-white dark:bg-[#0a0a0a]">
       <div className="mx-auto max-w-7xl px-6 py-12">
@@ -161,7 +205,7 @@ export default function CallDetailPage() {
             <div>
               <div className="flex items-center gap-3">
                 <span className={`text-lg font-semibold ${call.outcome === "success" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                  {call.outcome === "success" ? "✓ Success" : "✗ Failure"}
+                  {call.outcome === "success" ? "Success" : "Failure"}
                 </span>
                 {getStatusBadge(call.status)}
               </div>
@@ -262,41 +306,24 @@ export default function CallDetailPage() {
                 Transcript
               </h2>
               <div className="space-y-2">
-                {call.transcript.content.split('\n').filter((line: string) => line.trim()).map((line: string, i: number) => {
-                  const isAgent = line.trim().startsWith('Agent:');
-                  const isCustomer = line.trim().startsWith('Customer:');
-
-                  if (!isAgent && !isCustomer) return null;
-
-                  // Estimate timestamp
-                  const estimatedTime = call.transcript.durationSeconds
-                    ? Math.floor((i / call.transcript.content.split('\n').length) * call.transcript.durationSeconds)
-                    : i * 5;
-                  const minutes = Math.floor(estimatedTime / 60);
-                  const seconds = estimatedTime % 60;
-                  const timestamp = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-
-                  const text = line.replace(/^(Agent:|Customer:)\s*/, '');
-
-                  return (
-                    <div
-                      key={i}
-                      className="flex gap-3 py-2"
-                    >
-                      <div className="flex-shrink-0 w-16 text-xs text-[#999] font-mono pt-0.5">
-                        {timestamp}
-                      </div>
-                      <div className="flex-1">
-                        <span className="text-xs font-medium text-[#666] dark:text-[#999]">
-                          {isAgent ? 'Agent' : 'Customer'}
-                        </span>
-                        <p className="mt-1 text-sm text-[#1a1a1a] dark:text-white">
-                          {text}
-                        </p>
-                      </div>
+                {transcriptLines.map((line: any) => (
+                  <div
+                    key={line.index}
+                    className="flex gap-3 py-2"
+                  >
+                    <div className="flex-shrink-0 w-16 text-xs text-[#999] font-mono pt-0.5">
+                      {line.timestamp}
                     </div>
-                  );
-                })}
+                    <div className="flex-1">
+                      <span className="text-xs font-medium text-[#666] dark:text-[#999]">
+                        {line.isAgent ? 'Agent' : 'Customer'}
+                      </span>
+                      <p className="mt-1 text-sm text-[#1a1a1a] dark:text-white">
+                        {line.text}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

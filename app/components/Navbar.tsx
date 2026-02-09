@@ -10,7 +10,7 @@ export default async function Navbar() {
 
   return (
     <nav className="border-b border-[#e5e5e5] bg-white dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+      <div className="mx-auto flex max-w-7xl items-center justify-center gap-8 px-6 py-4">
         {/* Logo */}
         <Link href="/" className="text-xl font-bold text-[#1a1a1a] dark:text-white">
           Cellory
@@ -31,6 +31,12 @@ export default async function Navbar() {
             Calls
           </Link>
           <Link
+            href="/compare"
+            className="text-sm font-medium text-[#666] transition-colors hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
+          >
+            Compare
+          </Link>
+          <Link
             href="/playbooks"
             className="text-sm font-medium text-[#666] transition-colors hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
           >
@@ -39,7 +45,7 @@ export default async function Navbar() {
         </div>
 
         {/* User Menu */}
-        <div className="flex items-center gap-4">
+        <div className="ml-auto flex items-center gap-4">
           <div className="flex items-center gap-3">
             {session.user.image && (
               <img
@@ -83,6 +89,12 @@ export default async function Navbar() {
             className="text-sm font-medium text-[#666] transition-colors hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
           >
             Calls
+          </Link>
+          <Link
+            href="/compare"
+            className="text-sm font-medium text-[#666] transition-colors hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
+          >
+            Compare
           </Link>
           <Link
             href="/playbooks"

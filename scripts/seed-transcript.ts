@@ -45,7 +45,7 @@ async function main() {
       durationSeconds: 180, // 3 minutes
       language: "en",
       status: "ready",
-      wordTimestamps: null, // No timestamps for text-only
+      wordCount: SAMPLE_TRANSCRIPT.split(/\s+/).filter(w => w.length > 0).length,
     },
   });
 

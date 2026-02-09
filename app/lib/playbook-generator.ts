@@ -51,7 +51,6 @@ export async function generatePlaybook(
       model: openai("gpt-4o"), // ONLY gpt-4o for playbooks
       prompt: buildPlaybookPrompt(comparison),
       temperature: 0.3, // Slightly creative but consistent
-      maxTokens: 1500, // Cap output length for cost control
     });
 
     // Compute confidence scores

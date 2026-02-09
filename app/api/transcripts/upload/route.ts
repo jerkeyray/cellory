@@ -77,6 +77,9 @@ async function processTranscription(transcriptId: string, file: File) {
     // Add speaker labels (Agent/Customer)
     const labeledTranscript = await addSpeakerLabels(result.text);
 
+    // Calculate word count
+    const wordCount = labeledTranscript.split(/\s+/).filter(w => w.length > 0).length;
+
     // Update transcript with results
     await prisma.transcript.update({
       where: { id: transcriptId },
@@ -85,6 +88,7 @@ async function processTranscription(transcriptId: string, file: File) {
         durationSeconds: Math.round(result.duration),
         wordTimestamps: result.wordTimestamps || [],
         language: result.language,
+        wordCount: wordCount,
         status: "ready",
       },
     });

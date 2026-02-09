@@ -126,7 +126,24 @@ export async function extractMarkers(
     return result.object;
   } catch (error) {
     console.error("Marker extraction error:", error);
-    return { agent_markers: [], auxiliary_metrics: {} };
+    return {
+      agent_markers: [],
+      auxiliary_metrics: {
+        call_tone: null,
+        financial_discussion: null,
+        mentions_taxes: null,
+        mentions_fees: null,
+        mentions_refunds: null,
+        mentions_withdrawals: null,
+        compliance_language: null,
+        agent_turns: null,
+        customer_turns: null,
+        clear_outcome: null,
+        predicted_outcome: null,
+        outcome_confidence: null,
+        outcome_reasoning: null,
+      },
+    };
   }
 }
 

@@ -52,6 +52,7 @@ model Transcript {
   wordTimestamps    Json?
   language          String?
   qualityScore      Float?           @map("quality_score")
+  wordCount         Int?             @map("word_count")
   status            TranscriptStatus @default(processing)
   createdAt         DateTime         @default(now())
 
@@ -72,6 +73,8 @@ model Call {
   signals      CallSignal[]
   aggregates   CallAggregate[]
 
+  @@index([transcriptId])
+  @@index([outcome, status])
   @@map("calls")
 }
 
@@ -87,6 +90,7 @@ model CallSignal {
 
   call Call @relation(fields: [callId], references: [id], onDelete: Cascade)
 
+  @@index([callId])
   @@map("call_signals")
 }
 
@@ -98,6 +102,7 @@ model CallAggregate {
 
   call Call @relation(fields: [callId], references: [id], onDelete: Cascade)
 
+  @@index([callId])
   @@map("call_aggregates")
 }
 

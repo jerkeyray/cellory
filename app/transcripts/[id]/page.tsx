@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -26,6 +26,7 @@ interface Transcript {
   language: string | null;
   qualityScore: number | null;
   wordTimestamps: WordTimestamp[] | null;
+  wordCount: number | null;
   createdAt: string;
   calls: Call[];
 }
@@ -75,14 +76,14 @@ export default function TranscriptDetailPage() {
     }
   };
 
-  const formatDuration = (seconds: number | null) => {
+  const formatDuration = useCallback((seconds: number | null) => {
     if (!seconds) return "—";
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
+  }, []);
 
-  const formatDate = (date: string) => {
+  const formatDate = useCallback((date: string) => {
     return new Date(date).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -90,9 +91,9 @@ export default function TranscriptDetailPage() {
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
+  }, []);
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = useCallback((status: string) => {
     const styles = {
       processing: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
       ready: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
@@ -108,7 +109,49 @@ export default function TranscriptDetailPage() {
         {status}
       </span>
     );
-  };
+  }, []);
+
+  // Use pre-calculated word count from database, fallback to calculation if not available
+  const wordCount = useMemo(() => {
+    if (!transcript) return 0;
+    if (transcript.wordCount) return transcript.wordCount;
+    // Fallback for old transcripts without wordCount
+    return transcript.content.split(/\s+/).filter(w => w.length > 0).length;
+  }, [transcript?.wordCount, transcript?.content]);
+
+  // Memoize transcript lines parsing
+  const transcriptLines = useMemo(() => {
+    if (!transcript) return [];
+
+    return transcript.content
+      .split('\n')
+      .filter(line => line.trim())
+      .map((line, i, arr) => {
+        const isAgent = line.trim().startsWith('Agent:');
+        const isCustomer = line.trim().startsWith('Customer:');
+
+        if (!isAgent && !isCustomer) return null;
+
+        // Estimate timestamp
+        const estimatedTime = transcript.durationSeconds
+          ? Math.floor((i / arr.length) * transcript.durationSeconds)
+          : i * 5;
+        const minutes = Math.floor(estimatedTime / 60);
+        const seconds = estimatedTime % 60;
+        const timestamp = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+        const text = line.replace(/^(Agent:|Customer:)\s*/, '');
+
+        return {
+          index: i,
+          isAgent,
+          isCustomer,
+          timestamp,
+          text,
+        };
+      })
+      .filter(Boolean);
+  }, [transcript?.content, transcript?.durationSeconds]);
 
   if (loading) {
     return (
@@ -199,41 +242,24 @@ export default function TranscriptDetailPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {transcript.content.split('\n').filter(line => line.trim()).map((line, i) => {
-                    const isAgent = line.trim().startsWith('Agent:');
-                    const isCustomer = line.trim().startsWith('Customer:');
-
-                    if (!isAgent && !isCustomer) return null;
-
-                    // Estimate timestamp (rough approximation based on line position)
-                    const estimatedTime = transcript.durationSeconds
-                      ? Math.floor((i / transcript.content.split('\n').length) * transcript.durationSeconds)
-                      : i * 5;
-                    const minutes = Math.floor(estimatedTime / 60);
-                    const seconds = estimatedTime % 60;
-                    const timestamp = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-
-                    const text = line.replace(/^(Agent:|Customer:)\s*/, '');
-
-                    return (
-                      <div
-                        key={i}
-                        className="flex gap-3 py-2"
-                      >
-                        <div className="flex-shrink-0 w-16 text-xs text-[#999] font-mono pt-0.5">
-                          {timestamp}
-                        </div>
-                        <div className="flex-1">
-                          <span className="text-xs font-medium text-[#666] dark:text-[#999]">
-                            {isAgent ? 'Agent' : 'Customer'}
-                          </span>
-                          <p className="mt-1 text-sm text-[#1a1a1a] dark:text-white">
-                            {text}
-                          </p>
-                        </div>
+                  {transcriptLines.map((line: any) => (
+                    <div
+                      key={line.index}
+                      className="flex gap-3 py-2"
+                    >
+                      <div className="flex-shrink-0 w-16 text-xs text-[#999] font-mono pt-0.5">
+                        {line.timestamp}
                       </div>
-                    );
-                  })}
+                      <div className="flex-1">
+                        <span className="text-xs font-medium text-[#666] dark:text-[#999]">
+                          {line.isAgent ? 'Agent' : 'Customer'}
+                        </span>
+                        <p className="mt-1 text-sm text-[#1a1a1a] dark:text-white">
+                          {line.text}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -285,7 +311,7 @@ export default function TranscriptDetailPage() {
                 <div>
                   <dt className="text-[#666] dark:text-[#999]">Word Count</dt>
                   <dd className="mt-1 font-medium text-[#1a1a1a] dark:text-white">
-                    {transcript.content.split(/\s+/).length}
+                    {wordCount}
                   </dd>
                 </div>
                 {transcript.wordTimestamps && (
@@ -325,7 +351,7 @@ export default function TranscriptDetailPage() {
                               : "text-red-600 dark:text-red-400"
                           }`}
                         >
-                          {call.outcome === "success" ? "✓ Success" : "✗ Failure"}
+                          {call.outcome === "success" ? "Success" : "Failure"}
                         </span>
                         <span className="text-[#999]">
                           {formatDate(call.createdAt)}

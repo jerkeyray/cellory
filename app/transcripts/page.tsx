@@ -1,8 +1,6 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { prisma } from "@/app/lib/prisma";
+import TranscriptUploadForm from "./TranscriptUploadForm";
 
 interface Transcript {
   id: string;
@@ -10,138 +8,57 @@ interface Transcript {
   status: "processing" | "ready" | "error";
   durationSeconds: number | null;
   language: string | null;
-  createdAt: string;
+  createdAt: Date;
   _count: {
     calls: number;
   };
 }
 
-export default function TranscriptsPage() {
-  const router = useRouter();
-  const [transcripts, setTranscripts] = useState<Transcript[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [uploadedId, setUploadedId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchTranscripts();
-  }, []);
-
-  // Poll for transcript completion and redirect
-  useEffect(() => {
-    if (!uploadedId) return;
-
-    const interval = setInterval(async () => {
-      const res = await fetch(`/api/transcripts/${uploadedId}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.status === "ready") {
-          clearInterval(interval);
-          router.push(`/transcripts/${uploadedId}`);
-        } else if (data.status === "error") {
-          clearInterval(interval);
-          setError("Transcription failed");
-          setUploadedId(null);
-        }
-      }
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [uploadedId, router]);
-
-  const fetchTranscripts = async () => {
-    try {
-      const res = await fetch("/api/transcripts");
-      if (!res.ok) throw new Error("Failed to fetch transcripts");
-      const data = await res.json();
-      setTranscripts(data);
-    } catch (err) {
-      setError("Failed to load transcripts");
-    } finally {
-      setLoading(false);
-    }
+function getStatusBadge(status: string) {
+  const styles = {
+    processing: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    ready: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    error: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  return (
+    <span
+      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+        styles[status as keyof typeof styles] || ""
+      }`}
+    >
+      {status}
+    </span>
+  );
+}
 
-    setUploading(true);
-    setError(null);
+function formatDuration(seconds: number | null) {
+  if (!seconds) return "—";
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
 
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
+function formatDate(date: Date) {
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
-      const res = await fetch("/api/transcripts/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Upload failed");
-      }
-
-      const result = await res.json();
-
-      // Refresh transcripts list
-      await fetchTranscripts();
-
-      // Start polling for completion
-      setUploadedId(result.id);
-    } catch (err: any) {
-      setError(err.message || "Upload failed");
-    } finally {
-      setUploading(false);
-      // Reset file input
-      e.target.value = "";
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      processing: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-      ready: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      error: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-    };
-
-    return (
-      <span
-        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-          styles[status as keyof typeof styles] || ""
-        }`}
-      >
-        {status}
-      </span>
-    );
-  };
-
-  const formatDuration = (seconds: number | null) => {
-    if (!seconds) return "—";
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  if (loading) {
-    return (
-      <div className="flex min-h-[calc(100vh-73px)] items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#ff6b35] border-t-transparent" />
-      </div>
-    );
-  }
+export default async function TranscriptsPage() {
+  // Fetch transcripts server-side
+  const transcripts = await prisma.transcript.findMany({
+    include: {
+      _count: {
+        select: { calls: true },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
   return (
     <div className="min-h-[calc(100vh-73px)] bg-white dark:bg-[#0a0a0a]">
@@ -157,25 +74,8 @@ export default function TranscriptsPage() {
             </p>
           </div>
 
-          {/* Upload Button */}
-          <label className={`cursor-pointer rounded-lg bg-[#ff6b35] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#e55a2b] ${uploading || uploadedId ? "opacity-50 cursor-not-allowed" : ""}`}>
-            {uploadedId ? "Processing..." : uploading ? "Uploading..." : "Upload Audio"}
-            <input
-              type="file"
-              accept=".wav,.mp3,.m4a"
-              onChange={handleFileUpload}
-              disabled={uploading || !!uploadedId}
-              className="hidden"
-            />
-          </label>
+          <TranscriptUploadForm />
         </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-            {error}
-          </div>
-        )}
 
         {/* Transcripts List */}
         {transcripts.length === 0 ? (
@@ -216,7 +116,9 @@ export default function TranscriptsPage() {
                     <div className="mt-2 flex items-center gap-4 text-sm text-[#666] dark:text-[#999]">
                       <span>{getStatusBadge(transcript.status)}</span>
                       {transcript.durationSeconds && (
-                        <span>Duration: {formatDuration(transcript.durationSeconds)}</span>
+                        <span>
+                          Duration: {formatDuration(transcript.durationSeconds)}
+                        </span>
                       )}
                       {transcript.language && (
                         <span>Language: {transcript.language.toUpperCase()}</span>
