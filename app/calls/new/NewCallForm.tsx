@@ -85,7 +85,7 @@ export default function NewCallForm() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[calc(100vh-73px)] items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#ff6b35] border-t-transparent" />
       </div>
     );

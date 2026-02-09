@@ -208,7 +208,7 @@ export default function CallDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[calc(100vh-73px)] items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#ff6b35] border-t-transparent" />
       </div>
     );
@@ -216,7 +216,7 @@ export default function CallDetailPage() {
 
   if (error || !call) {
     return (
-      <div className="flex min-h-[calc(100vh-73px)] items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <p className="text-red-600">{error || "Call not found"}</p>
           <Link href="/calls" className="mt-4 inline-block text-sm text-[#ff6b35] hover:underline">
@@ -228,7 +228,7 @@ export default function CallDetailPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-73px)] bg-white">
+    <div className="min-h-screen bg-white">
       <div className="mx-auto max-w-7xl px-6 py-12">
         {/* Header */}
         <div className="mb-8">

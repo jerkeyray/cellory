@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, CheckCircle2, Clock, Trash2 } from "lucide-react";
-import BatchAnalysisBar from "./BatchAnalysisBar";
+import BatchAnalysisButton from "./BatchAnalysisButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -35,11 +35,12 @@ interface Transcript {
 
 interface TranscriptsClientProps {
   transcripts: Transcript[];
+  selectedIds: string[];
+  onSelectionChange: (ids: string[]) => void;
 }
 
-export default function TranscriptsClient({ transcripts }: TranscriptsClientProps) {
+export default function TranscriptsClient({ transcripts, selectedIds, onSelectionChange }: TranscriptsClientProps) {
   const router = useRouter();
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deleteModalId, setDeleteModalId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -61,17 +62,17 @@ export default function TranscriptsClient({ transcripts }: TranscriptsClientProp
   );
 
   const toggleSelection = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    onSelectionChange(
+      selectedIds.includes(id) ? selectedIds.filter((x) => x !== id) : [...selectedIds, id]
     );
   };
 
   const selectAll = () => {
-    setSelectedIds(unanalyzedTranscripts.map((t) => t.id));
+    onSelectionChange(unanalyzedTranscripts.map((t) => t.id));
   };
 
   const clearSelection = () => {
-    setSelectedIds([]);
+    onSelectionChange([]);
   };
 
   const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" => {
@@ -137,6 +138,7 @@ export default function TranscriptsClient({ transcripts }: TranscriptsClientProp
       }
 
       setDeleteModalId(null);
+      setDeleting(false);
       router.refresh();
     } catch (err: any) {
       setDeleteError(err.message || "Failed to delete transcript");
@@ -168,32 +170,26 @@ export default function TranscriptsClient({ transcripts }: TranscriptsClientProp
 
   return (
     <>
-      {/* Batch Analysis Bar */}
-      {unanalyzedTranscripts.length > 0 && (
-        <div className="mb-6">
-          <BatchAnalysisBar
-            selectedIds={selectedIds}
-            onClearSelection={clearSelection}
-            totalUnanalyzed={unanalyzedTranscripts.length}
-          />
+      {/* Bulk Actions */}
+      {unanalyzedTranscripts.length > 0 && selectedIds.length > 0 && (
+        <div className="mb-4 flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            {selectedIds.length} selected
+          </div>
+          <Button variant="link" size="sm" onClick={clearSelection}>
+            Clear selection
+          </Button>
         </div>
       )}
 
-      {/* Bulk Actions */}
-      {unanalyzedTranscripts.length > 0 && (
+      {unanalyzedTranscripts.length > 0 && selectedIds.length === 0 && (
         <div className="mb-4 flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            {selectedIds.length > 0 ? (
-              <>{selectedIds.length} selected</>
-            ) : (
-              <>{unanalyzedTranscripts.length} ready for analysis</>
-            )}
+            {unanalyzedTranscripts.length} ready for analysis
           </div>
-          {unanalyzedTranscripts.length > 0 && selectedIds.length === 0 && (
-            <Button variant="link" size="sm" onClick={selectAll}>
-              Select all unanalyzed
-            </Button>
-          )}
+          <Button variant="link" size="sm" onClick={selectAll}>
+            Select all unanalyzed
+          </Button>
         </div>
       )}
 

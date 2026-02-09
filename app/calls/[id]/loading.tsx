@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 
 export default function CallDetailLoading() {
   return (
-    <div className="min-h-[calc(100vh-73px)] bg-background">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-6 py-8">
         {/* Header */}
         <div className="mb-8">

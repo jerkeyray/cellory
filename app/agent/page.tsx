@@ -20,7 +20,7 @@ export default async function AgentPage() {
   });
 
   return (
-    <div className="min-h-[calc(100vh-73px)] bg-background">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-6 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">Agent</h1>

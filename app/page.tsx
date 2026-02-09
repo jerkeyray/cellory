@@ -477,7 +477,7 @@ async function Dashboard({ userId }: { userId: string }) {
   const showPlaybookPrompt = callsCount >= 3 && playbooksCount === 0;
 
   return (
-    <div className="min-h-[calc(100vh-73px)] bg-background">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-6 py-12">
         {/* Hero Section */}
         <div className="mb-12">

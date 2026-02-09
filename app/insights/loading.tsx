@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 
 export default function InsightsLoading() {
   return (
-    <div className="min-h-[calc(100vh-73px)] bg-white">
+    <div className="min-h-screen bg-white">
       <div className="mx-auto max-w-7xl px-6 py-12">
         {/* Header Skeleton */}
         <div className="mb-8">

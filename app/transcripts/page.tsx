@@ -1,8 +1,6 @@
 import { prisma } from "@/app/lib/prisma";
 import { auth } from "@/auth";
-import BulkUploadForm from "./BulkUploadForm";
-import TranscriptsClient from "./TranscriptsClient";
-import { PageHeader } from "@/components/page-header";
+import TranscriptsPageContent from "./TranscriptsPageContent";
 import { redirect } from "next/navigation";
 
 export default async function TranscriptsPage() {
@@ -43,20 +41,9 @@ export default async function TranscriptsPage() {
   }));
 
   return (
-    <div className="min-h-[calc(100vh-73px)] bg-background">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-6 py-8">
-        <PageHeader
-          title="Recordings"
-          description="Upload and manage your call recordings"
-        />
-
-        {/* Bulk Upload Form */}
-        <div className="mb-8">
-          <BulkUploadForm />
-        </div>
-
-        {/* Transcripts List with Batch Analysis */}
-        <TranscriptsClient transcripts={transcriptsData} />
+        <TranscriptsPageContent transcripts={transcriptsData} />
       </div>
     </div>
   );

@@ -115,14 +115,6 @@ export default async function InsightsPage() {
     low: callsWithQuality.filter((c) => (c.transcript.qualityScore || 0) < 0.4).length,
   };
 
-  // Audio format distribution
-  const formatCounts: Record<string, number> = {};
-  calls.forEach((call) => {
-    if (call.transcript.audioFormat) {
-      formatCounts[call.transcript.audioFormat] = (formatCounts[call.transcript.audioFormat] || 0) + 1;
-    }
-  });
-
   // Average duration
   const callsWithDuration = calls.filter((c) => c.transcript.durationSeconds !== null);
   const avgDuration =
@@ -229,7 +221,7 @@ export default async function InsightsPage() {
   const isV3 = comparison ? (comparison as any).schemaVersion === 3 : true;
 
   return (
-    <div className="min-h-[calc(100vh-73px)] bg-white">
+    <div className="min-h-screen bg-white">
       <div className="mx-auto max-w-7xl px-6 py-12">
         {/* Header */}
         <div className="mb-8">
@@ -364,73 +356,8 @@ export default async function InsightsPage() {
                 </div>
               </div>
             </div>
-
-            {/* Audio Format Distribution */}
-            {Object.keys(formatCounts).length > 0 && (
-              <div className="rounded-xl border border bg-white p-6">
-                <h3 className="mb-4 text-lg font-semibold text-foreground">
-                  Audio Format Distribution
-                </h3>
-                <div className="space-y-3">
-                  {Object.entries(formatCounts)
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([format, count]) => (
-                      <div key={format} className="flex items-center gap-3">
-                        <div className="w-24 text-sm font-medium text-foreground uppercase">
-                          {format}
-                        </div>
-                        <div className="flex-1">
-                          <div className="h-6 rounded-full bg-gray-100">
-                            <div
-                              className="h-6 rounded-full bg-blue-500"
-                              style={{
-                                width: `${(count / callsWithQuality.length) * 100}%`,
-                              }}
-                            />
-                          </div>
-                        </div>
-                        <div className="w-16 text-right text-sm text-muted-foreground">
-                          {count} ({((count / callsWithQuality.length) * 100).toFixed(0)}%)
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
-
-        {/* Outcome Comparison */}
-        <div className="mb-4">
-          <h2 className="text-2xl font-semibold text-foreground">
-            Outcome Comparison
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Statistical comparison of success vs. failure calls
-          </p>
-        </div>
-
-        {/* Comparison Stats */}
-        <div className="mb-8 grid gap-4 md:grid-cols-2">
-          <div className="rounded-xl border border bg-white p-6">
-            <div className="text-sm text-muted-foreground">
-              Success Calls
-            </div>
-            <div className="mt-2 text-3xl font-bold text-green-600">
-              {isSuccessOnlyMode
-                ? successInsights!.callCount
-                : comparison!.successCount}
-            </div>
-          </div>
-          <div className="rounded-xl border border bg-white p-6">
-            <div className="text-sm text-muted-foreground">
-              Failure Calls
-            </div>
-            <div className="mt-2 text-3xl font-bold text-red-600">
-              {isSuccessOnlyMode ? 0 : comparison!.failureCount}
-            </div>
-          </div>
-        </div>
 
         {insufficient ? (
           <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-6 text-center">
@@ -444,7 +371,41 @@ export default async function InsightsPage() {
               Analyze Calls
             </Link>
           </div>
-        ) : isSuccessOnlyMode ? (
+        ) : (
+          <>
+            {/* Outcome Comparison */}
+            <div className="mb-4">
+              <h2 className="text-2xl font-semibold text-foreground">
+                Outcome Comparison
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Statistical comparison of success vs. failure calls
+              </p>
+            </div>
+
+            {/* Comparison Stats */}
+            <div className="mb-8 grid gap-4 md:grid-cols-2">
+              <div className="rounded-xl border border bg-white p-6">
+                <div className="text-sm text-muted-foreground">
+                  Success Calls
+                </div>
+                <div className="mt-2 text-3xl font-bold text-green-600">
+                  {isSuccessOnlyMode
+                    ? successInsights!.callCount
+                    : comparison!.successCount}
+                </div>
+              </div>
+              <div className="rounded-xl border border bg-white p-6">
+                <div className="text-sm text-muted-foreground">
+                  Failure Calls
+                </div>
+                <div className="mt-2 text-3xl font-bold text-red-600">
+                  {isSuccessOnlyMode ? 0 : comparison!.failureCount}
+                </div>
+              </div>
+            </div>
+
+            {isSuccessOnlyMode ? (
           <>
             {/* Success-Only Insights */}
             <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
@@ -823,6 +784,8 @@ export default async function InsightsPage() {
                 </dl>
               </div>
             </div>
+          </>
+        )}
           </>
         )}
       </div>

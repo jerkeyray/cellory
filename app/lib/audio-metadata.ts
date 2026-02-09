@@ -19,8 +19,12 @@ export async function extractAudioMetadata(file: File): Promise<AudioMetadata> {
     // Parse audio metadata
     const metadata = await parseBuffer(buffer, { mimeType: file.type });
 
+    // Extract format from file extension instead of container metadata
+    // This shows what users expect (mp3, m4a, wav) rather than internal container formats (isom/iso2)
+    const extension = file.name.split('.').pop()?.toLowerCase() || "unknown";
+
     return {
-      format: metadata.format.container || metadata.format.codec || "unknown",
+      format: extension,
       sampleRate: metadata.format.sampleRate || 0,
       channels: metadata.format.numberOfChannels || 0,
       bitrate: metadata.format.bitrate || 0,
