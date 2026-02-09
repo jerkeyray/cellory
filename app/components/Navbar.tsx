@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import QuickActionsMenu from "./QuickActionsMenu";
 
 const navLinks = [
   { href: "/transcripts", label: "Transcripts" },
@@ -62,10 +61,8 @@ export default async function Navbar() {
           ))}
         </div>
 
-        {/* Right Side: Quick Actions + User Menu */}
+        {/* Right Side: User Menu */}
         <div className="flex items-center gap-3">
-          <QuickActionsMenu />
-
           {/* Desktop User Dropdown */}
           <div className="hidden md:block">
             <DropdownMenu>
