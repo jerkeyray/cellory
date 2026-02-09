@@ -1,10 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/app/lib/prisma";
 import { transcribeAudio, validateAudioFile } from "@/app/lib/whisper";
 import { addSpeakerLabels } from "@/app/lib/diarization";
 
-export async function POST(request: NextRequest) {
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function POST(request: Request) {
   try {
     // Check authentication
     const session = await auth();
@@ -13,7 +16,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse multipart form data
-    const formData = await request.formData();
+    const contentType = request.headers.get("content-type") || "";
+    if (!contentType.includes("multipart/form-data")) {
+      return NextResponse.json(
+        { error: "Invalid content type. Expected multipart/form-data." },
+        { status: 415 }
+      );
+    }
+
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch (parseError) {
+      console.error("Failed to parse form data:", parseError);
+      return NextResponse.json(
+        { error: "Failed to parse form data" },
+        { status: 400 }
+      );
+    }
     const file = formData.get("file") as File;
 
     if (!file) {

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { prisma } from "@/app/lib/prisma";
-import { compareOutcomes } from "@/app/lib/comparator";
+import { compareOutcomes, generateSuccessInsights } from "@/app/lib/comparator";
 import { AggregateFeatures } from "@/app/lib/aggregator";
+import { AggregateFeaturesV3 } from "@/app/lib/aggregator-v3";
+import GeneratePlaybookButton from "./GeneratePlaybookButton";
 
 interface Differentiator {
   feature: string;
@@ -91,26 +93,40 @@ export default async function ComparePage() {
     (call) => call.aggregates[0].features as unknown as AggregateFeatures
   );
 
-  // Run comparison server-side (version-aware)
-  const comparison = compareOutcomes(successAggregates, failureAggregates);
+  // Determine mode: comparison or success-only insights
+  const hasSuccessData = successAggregates.length > 0;
+  const hasFailureData = failureAggregates.length > 0;
+  const isSuccessOnlyMode = hasSuccessData && !hasFailureData;
 
-  const insufficient =
-    comparison.successCount === 0 || comparison.failureCount === 0;
+  // Run comparison or generate success insights
+  const comparison = hasSuccessData && hasFailureData
+    ? compareOutcomes(successAggregates, failureAggregates)
+    : null;
+
+  // Generate success-only insights if no failure data
+  const successInsights = isSuccessOnlyMode
+    ? generateSuccessInsights(successAggregates as AggregateFeaturesV3[])
+    : null;
+
+  const insufficient = !hasSuccessData;
 
   // Check if this is a v3 comparison
-  const isV3 = (comparison as any).schemaVersion === 3;
+  const isV3 = comparison ? (comparison as any).schemaVersion === 3 : true;
 
   return (
     <div className="min-h-[calc(100vh-73px)] bg-white dark:bg-[#0a0a0a]">
       <div className="mx-auto max-w-7xl px-6 py-12">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#1a1a1a] dark:text-white">
-            Outcome Comparison
-          </h1>
-          <p className="mt-2 text-sm text-[#666] dark:text-[#999]">
-            Statistical comparison of success vs. failure calls
-          </p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-[#1a1a1a] dark:text-white">
+              Outcome Comparison
+            </h1>
+            <p className="mt-2 text-sm text-[#666] dark:text-[#999]">
+              Statistical comparison of success vs. failure calls
+            </p>
+          </div>
+          <GeneratePlaybookButton hasData={hasSuccessData} />
         </div>
 
         {/* Stats */}
@@ -120,7 +136,9 @@ export default async function ComparePage() {
               Success Calls
             </div>
             <div className="mt-2 text-3xl font-bold text-green-600 dark:text-green-400">
-              {comparison.successCount}
+              {isSuccessOnlyMode
+                ? successInsights!.callCount
+                : comparison!.successCount}
             </div>
           </div>
           <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
@@ -128,7 +146,7 @@ export default async function ComparePage() {
               Failure Calls
             </div>
             <div className="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">
-              {comparison.failureCount}
+              {isSuccessOnlyMode ? 0 : comparison!.failureCount}
             </div>
           </div>
         </div>
@@ -136,16 +154,184 @@ export default async function ComparePage() {
         {insufficient ? (
           <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-6 text-center dark:border-yellow-900 dark:bg-yellow-950">
             <p className="text-sm text-yellow-800 dark:text-yellow-200">
-              Need at least 1 success call and 1 failure call to generate
-              meaningful comparisons.
+              No calls analyzed yet. Upload call transcripts to get started.
             </p>
             <Link
               href="/calls/new"
               className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#ff6b35] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#e55a2b]"
             >
-              Analyze More Calls
+              Analyze Calls
             </Link>
           </div>
+        ) : isSuccessOnlyMode ? (
+          <>
+            {/* Success-Only Insights */}
+            <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                <strong>Success Insights Mode:</strong> Showing patterns from successful calls only.
+                Add failure calls to unlock comparative analysis and identify what specifically differentiates success from failure.
+              </p>
+            </div>
+
+            {/* Success Benchmarks */}
+            <div className="mb-8 rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
+              <h2 className="mb-4 text-lg font-semibold text-[#1a1a1a] dark:text-white">
+                Success Benchmarks
+              </h2>
+              <p className="mb-4 text-sm text-[#666] dark:text-[#999]">
+                Key metrics from {successInsights!.callCount} successful {successInsights!.callCount === 1 ? 'call' : 'calls'}
+              </p>
+
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="rounded-lg border border-[#e5e5e5] p-4 dark:border-[#2a2a2a]">
+                  <div className="text-xs text-[#666] dark:text-[#999]">
+                    Avg Constraints Per Call
+                  </div>
+                  <div className="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">
+                    {successInsights!.avgConstraintsPerCall.toFixed(1)}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-[#e5e5e5] p-4 dark:border-[#2a2a2a]">
+                  <div className="text-xs text-[#666] dark:text-[#999]">
+                    Avg Resolution Latency
+                  </div>
+                  <div className="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">
+                    {successInsights!.avgResolutionLatency !== null
+                      ? `${successInsights!.avgResolutionLatency.toFixed(1)}s`
+                      : "N/A"}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-[#e5e5e5] p-4 dark:border-[#2a2a2a]">
+                  <div className="text-xs text-[#666] dark:text-[#999]">
+                    Control Recovery Rate
+                  </div>
+                  <div className="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">
+                    {(successInsights!.controlRecoveryRate * 100).toFixed(0)}%
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-[#e5e5e5] p-4 dark:border-[#2a2a2a]">
+                  <div className="text-xs text-[#666] dark:text-[#999]">
+                    Time to First Constraint
+                  </div>
+                  <div className="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">
+                    {successInsights!.timeToFirstConstraint !== null
+                      ? `${successInsights!.timeToFirstConstraint.toFixed(1)}s`
+                      : "N/A"}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-[#e5e5e5] p-4 dark:border-[#2a2a2a]">
+                  <div className="text-xs text-[#666] dark:text-[#999]">
+                    Avg Constraint Severity
+                  </div>
+                  <div className="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">
+                    {(successInsights!.avgConstraintSeverity * 100).toFixed(0)}%
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-[#e5e5e5] p-4 dark:border-[#2a2a2a]">
+                  <div className="text-xs text-[#666] dark:text-[#999]">
+                    Unresolved Constraints
+                  </div>
+                  <div className="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">
+                    {successInsights!.avgUnresolvedConstraints.toFixed(1)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Constraint Type Distribution */}
+            {Object.keys(successInsights!.constraintTypeDistribution).length > 0 && (
+              <div className="mb-8 rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
+                <h2 className="mb-4 text-lg font-semibold text-[#1a1a1a] dark:text-white">
+                  Constraint Type Distribution
+                </h2>
+                <div className="space-y-3">
+                  {Object.entries(successInsights!.constraintTypeDistribution)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([type, ratio]) => (
+                      <div key={type} className="flex items-center gap-3">
+                        <div className="w-32 text-sm text-[#666] dark:text-[#999]">
+                          {type}
+                        </div>
+                        <div className="flex-1">
+                          <div className="h-6 rounded-full bg-[#f5f5f5] dark:bg-[#1a1a1a]">
+                            <div
+                              className="h-6 rounded-full bg-green-500 dark:bg-green-600"
+                              style={{ width: `${ratio * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="w-16 text-right text-sm font-medium text-[#1a1a1a] dark:text-white">
+                          {(ratio * 100).toFixed(0)}%
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Strategy Usage */}
+            {Object.keys(successInsights!.strategyUsage).length > 0 && (
+              <div className="mb-8 rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
+                <h2 className="mb-4 text-lg font-semibold text-[#1a1a1a] dark:text-white">
+                  Strategy Usage
+                </h2>
+                <div className="space-y-3">
+                  {Object.entries(successInsights!.strategyUsage)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([strategy, ratio]) => (
+                      <div key={strategy} className="flex items-center gap-3">
+                        <div className="w-32 text-sm text-[#666] dark:text-[#999]">
+                          {strategy.replace(/_/g, " ")}
+                        </div>
+                        <div className="flex-1">
+                          <div className="h-6 rounded-full bg-[#f5f5f5] dark:bg-[#1a1a1a]">
+                            <div
+                              className="h-6 rounded-full bg-blue-500 dark:bg-blue-600"
+                              style={{ width: `${ratio * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="w-16 text-right text-sm font-medium text-[#1a1a1a] dark:text-white">
+                          {(ratio * 100).toFixed(0)}%
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Top Patterns */}
+            {successInsights!.topPatterns.length > 0 && (
+              <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
+                <h2 className="mb-4 text-lg font-semibold text-[#1a1a1a] dark:text-white">
+                  Common Constraint Patterns
+                </h2>
+                <p className="mb-4 text-sm text-[#666] dark:text-[#999]">
+                  Most frequent constraint sequences in successful calls
+                </p>
+                <div className="space-y-2">
+                  {successInsights!.topPatterns.map((pattern, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between rounded-lg border border-[#e5e5e5] p-3 dark:border-[#2a2a2a]"
+                    >
+                      <span className="text-sm text-[#1a1a1a] dark:text-white">
+                        {pattern.pattern}
+                      </span>
+                      <span className="text-xs text-[#999]">
+                        {pattern.frequency}x
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <>
             {/* Key Differentiators */}

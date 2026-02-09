@@ -12,7 +12,7 @@
 
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { ComparisonResult } from "./comparator";
+import { ComparisonResult, SuccessInsights } from "./comparator";
 
 export interface PlaybookResult {
   title: string;
@@ -193,4 +193,113 @@ function computeConfidence(comparison: ComparisonResult): {
     dataQuality: Math.min(dataQuality, 1),
     differentiationStrength: Math.min(differentiationStrength, 1),
   };
+}
+
+// ==================== SUCCESS-ONLY PLAYBOOK ====================
+
+/**
+ * Generate playbook from success calls only
+ * Used when no failure calls are available
+ */
+export async function generateSuccessPlaybook(
+  insights: SuccessInsights
+): Promise<PlaybookResult> {
+  if (insights.callCount < 1) {
+    return {
+      title: "No Data",
+      content: "Need at least 1 successful call to generate insights.",
+      callCount: 0,
+      confidenceScores: {
+        dataQuality: 0,
+        differentiationStrength: 0,
+      },
+    };
+  }
+
+  try {
+    const result = await generateText({
+      model: openai("gpt-4o"),
+      prompt: buildSuccessPlaybookPrompt(insights),
+      temperature: 0.3,
+    });
+
+    // Compute confidence based on sample size only
+    const dataQuality = 1 / (1 + Math.exp(-0.15 * (insights.callCount - 20)));
+
+    return {
+      title: `Success Patterns (${insights.callCount} Calls)`,
+      content: result.text,
+      callCount: insights.callCount,
+      confidenceScores: {
+        dataQuality: Math.min(dataQuality, 1),
+        differentiationStrength: 0.5, // Moderate - no comparison baseline
+      },
+    };
+  } catch (error) {
+    console.error("Success playbook generation error:", error);
+    throw error;
+  }
+}
+
+/**
+ * Build success-only playbook prompt
+ */
+function buildSuccessPlaybookPrompt(insights: SuccessInsights): string {
+  const constraintTypes = Object.entries(insights.constraintTypeDistribution)
+    .sort((a, b) => b[1] - a[1])
+    .map(([type, ratio]) => `- ${type}: ${(ratio * 100).toFixed(0)}%`)
+    .join("\n");
+
+  const strategies = Object.entries(insights.strategyUsage)
+    .sort((a, b) => b[1] - a[1])
+    .map(([strategy, ratio]) => `- ${strategy.replace(/_/g, " ")}: ${(ratio * 100).toFixed(0)}%`)
+    .join("\n");
+
+  const patterns = insights.topPatterns
+    .map((p) => `- ${p.pattern} (${p.frequency}x)`)
+    .join("\n");
+
+  return `Generate a success pattern playbook based on ${insights.callCount} successful financial calls.
+
+**Success Metrics:**
+- Avg constraints per call: ${insights.avgConstraintsPerCall.toFixed(1)}
+- Avg resolution latency: ${insights.avgResolutionLatency !== null ? insights.avgResolutionLatency.toFixed(1) + "s" : "N/A"}
+- Control recovery rate: ${(insights.controlRecoveryRate * 100).toFixed(0)}%
+- Control recovery before commitment: ${(insights.controlRecoveryBeforeCommitmentRate * 100).toFixed(0)}%
+- Unresolved constraints: ${insights.avgUnresolvedConstraints.toFixed(1)}
+- Constraint severity: ${(insights.avgConstraintSeverity * 100).toFixed(0)}%
+- Explicit constraints: ${(insights.explicitConstraintRatio * 100).toFixed(0)}%
+- Time to first constraint: ${insights.timeToFirstConstraint !== null ? insights.timeToFirstConstraint.toFixed(1) + "s" : "N/A"}
+
+**Constraint Type Distribution:**
+${constraintTypes || "None"}
+
+**Strategy Usage:**
+${strategies || "None"}
+
+**Common Constraint Patterns:**
+${patterns || "None"}
+
+Output format (markdown):
+# Success Patterns Playbook
+
+## What Works Well
+[Identify the strongest patterns from the data - what are successful reps doing consistently?]
+
+## Constraint Handling Success Patterns
+[Specific guidance on handling each constraint type based on what works in successful calls]
+
+## Timing Benchmarks
+[When constraints appear and how quickly they're resolved in successful calls]
+
+## Control & Recovery Best Practices
+[Patterns around maintaining and recovering control that lead to success]
+
+## Recommended Approach
+[Actionable steps to replicate these success patterns]
+
+## Add Failure Data to Unlock
+[Brief note: "Compare with failure calls to identify what specifically differentiates success from failure"]
+
+Keep guidance specific and data-driven. Focus on what IS working, not what MIGHT work.`;
 }

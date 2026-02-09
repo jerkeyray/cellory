@@ -377,7 +377,8 @@ function computeProfileV3(aggregates: AggregateFeaturesV3[]): FeatureProfileV3 {
   // Constraint types
   const allConstraintTypes: Record<string, number> = {};
   for (const agg of aggregates) {
-    for (const [type, count] of Object.entries(agg.constraint_type_counts)) {
+    const constraintCounts = agg.constraint_type_counts ?? {};
+    for (const [type, count] of Object.entries(constraintCounts)) {
       allConstraintTypes[type] = (allConstraintTypes[type] || 0) + count;
     }
   }
@@ -402,7 +403,8 @@ function computeProfileV3(aggregates: AggregateFeaturesV3[]): FeatureProfileV3 {
   // Strategy usage
   const allStrategies: Record<string, number> = {};
   for (const agg of aggregates) {
-    for (const [strategy, count] of Object.entries(agg.agent_strategy_count_by_type)) {
+    const strategyCounts = agg.agent_strategy_count_by_type ?? {};
+    for (const [strategy, count] of Object.entries(strategyCounts)) {
       allStrategies[strategy] = (allStrategies[strategy] || 0) + count;
     }
   }
@@ -639,5 +641,95 @@ function emptyProfileV3(): FeatureProfileV3 {
     control_shift_rate: 0,
     control_recovery_rate: 0,
     agent_control_ratio: 0,
+  };
+}
+
+// ==================== SUCCESS-ONLY INSIGHTS ====================
+
+/**
+ * Generate actionable insights from success calls only
+ * Used when no failure calls are available for comparison
+ */
+export interface SuccessInsights {
+  callCount: number;
+  avgConstraintsPerCall: number;
+  avgResolutionLatency: number | null;
+  constraintTypeDistribution: Record<string, number>;
+  strategyUsage: Record<string, number>;
+  controlRecoveryRate: number;
+  avgConstraintSeverity: number;
+  topPatterns: Array<{ pattern: string; frequency: number }>;
+  timeToFirstConstraint: number | null;
+  commitmentTypes: Record<string, number>;
+  explicitConstraintRatio: number;
+  avgUnresolvedConstraints: number;
+  controlRecoveryBeforeCommitmentRate: number;
+}
+
+/**
+ * Generate insights from success calls only
+ * Returns actionable patterns and benchmarks
+ */
+export function generateSuccessInsights(
+  successAggregates: AggregateFeaturesV3[]
+): SuccessInsights {
+  if (successAggregates.length === 0) {
+    return emptySuccessInsights();
+  }
+
+  const profile = computeProfileV3(successAggregates);
+  const count = successAggregates.length;
+
+  // Identify top constraint patterns
+  const constraintPatterns: Record<string, number> = {};
+  for (const agg of successAggregates) {
+    // Count common constraint sequences
+    const types = Object.keys(agg.constraint_type_counts ?? {});
+    if (types.length > 0) {
+      const pattern = types.sort().join(" → ");
+      constraintPatterns[pattern] = (constraintPatterns[pattern] || 0) + 1;
+    }
+  }
+
+  const topPatterns = Object.entries(constraintPatterns)
+    .map(([pattern, frequency]) => ({ pattern, frequency }))
+    .sort((a, b) => b.frequency - a.frequency)
+    .slice(0, 5);
+
+  // Commitment types (placeholder - would need commitment marker data)
+  const commitmentTypes: Record<string, number> = {};
+
+  return {
+    callCount: count,
+    avgConstraintsPerCall: profile.avg_constraints_per_call,
+    avgResolutionLatency: profile.avg_resolution_latency,
+    constraintTypeDistribution: profile.constraint_type_distribution,
+    strategyUsage: profile.strategy_usage,
+    controlRecoveryRate: profile.control_recovery_rate,
+    avgConstraintSeverity: profile.avg_constraint_severity,
+    topPatterns,
+    timeToFirstConstraint: profile.avg_time_to_first_constraint,
+    commitmentTypes,
+    explicitConstraintRatio: profile.explicit_constraint_ratio,
+    avgUnresolvedConstraints: profile.avg_unresolved_constraints,
+    controlRecoveryBeforeCommitmentRate: profile.control_recovery_before_commitment_rate,
+  };
+}
+
+function emptySuccessInsights(): SuccessInsights {
+  return {
+    callCount: 0,
+    avgConstraintsPerCall: 0,
+    avgResolutionLatency: null,
+    constraintTypeDistribution: {},
+    strategyUsage: {},
+    controlRecoveryRate: 0,
+    avgConstraintSeverity: 0,
+    topPatterns: [],
+    timeToFirstConstraint: null,
+    commitmentTypes: {},
+    explicitConstraintRatio: 0,
+    avgUnresolvedConstraints: 0,
+    controlRecoveryBeforeCommitmentRate: 0,
   };
 }

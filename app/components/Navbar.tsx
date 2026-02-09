@@ -31,6 +31,12 @@ export default async function Navbar() {
             Calls
           </Link>
           <Link
+            href="/analytics"
+            className="text-sm font-medium text-[#666] transition-colors hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
+          >
+            Analytics
+          </Link>
+          <Link
             href="/compare"
             className="text-sm font-medium text-[#666] transition-colors hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
           >
@@ -89,6 +95,12 @@ export default async function Navbar() {
             className="text-sm font-medium text-[#666] transition-colors hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
           >
             Calls
+          </Link>
+          <Link
+            href="/analytics"
+            className="text-sm font-medium text-[#666] transition-colors hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
+          >
+            Analytics
           </Link>
           <Link
             href="/compare"

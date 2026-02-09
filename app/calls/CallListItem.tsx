@@ -14,6 +14,11 @@ interface CallListItemProps {
       filename: string;
       durationSeconds: number | null;
     };
+    tags: Array<{
+      id: string;
+      name: string;
+      color: string | null;
+    }>;
     _count: {
       signals: number;
     };
@@ -130,6 +135,20 @@ export default function CallListItem({ call }: CallListItemProps) {
                   </span>
                 )}
               </div>
+              {/* Tags */}
+              {call.tags && call.tags.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {call.tags.map((tag) => (
+                    <span
+                      key={tag.id}
+                      className="rounded-full px-2 py-1 text-xs font-medium text-white"
+                      style={{ backgroundColor: tag.color || "#999" }}
+                    >
+                      {tag.name}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right text-sm text-[#999]">

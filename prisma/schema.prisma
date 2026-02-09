@@ -72,6 +72,8 @@ model Call {
   transcript   Transcript      @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
   signals      CallSignal[]
   aggregates   CallAggregate[]
+  tags         CallTag[]
+  notes        CallNote[]
 
   @@index([transcriptId])
   @@index([outcome, status])
@@ -116,6 +118,33 @@ model Playbook {
   createdAt            DateTime @default(now()) @map("created_at")
 
   @@map("playbooks")
+}
+
+model CallTag {
+  id        String   @id @default(uuid())
+  callId    String   @map("call_id")
+  name      String
+  color     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  call Call @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@index([callId])
+  @@index([name])
+  @@map("call_tags")
+}
+
+model CallNote {
+  id        String   @id @default(uuid())
+  callId    String   @map("call_id")
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  call Call @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@index([callId])
+  @@map("call_notes")
 }
 
 // ---------------------------------------------------------------------------

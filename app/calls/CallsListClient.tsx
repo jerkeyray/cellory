@@ -13,6 +13,11 @@ interface Call {
     filename: string;
     durationSeconds: number | null;
   };
+  tags: Array<{
+    id: string;
+    name: string;
+    color: string | null;
+  }>;
   _count: {
     signals: number;
   };
@@ -28,19 +33,81 @@ interface CallsListClientProps {
 }
 
 type FilterTab = "all" | "success" | "failure";
+type StatusFilter = "all" | "complete" | "processing" | "error";
+type SortBy = "date-desc" | "date-asc" | "duration-desc" | "signals-desc";
 
 export default function CallsListClient({ calls, stats }: CallsListClientProps) {
   const [filteredCalls, setFilteredCalls] = useState<Call[]>(calls);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortBy>("date-desc");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  const handleExport = () => {
+    // Build query params
+    const params = new URLSearchParams();
+    if (activeFilter !== "all") params.append("outcome", activeFilter);
+    if (statusFilter !== "all") params.append("status", statusFilter);
+    if (startDate) params.append("startDate", startDate);
+    if (endDate) params.append("endDate", endDate);
+
+    // Trigger download
+    window.location.href = `/api/calls/export?${params.toString()}`;
+  };
 
   useEffect(() => {
-    // Filter calls based on active tab
-    if (activeFilter === "all") {
-      setFilteredCalls(calls);
-    } else {
-      setFilteredCalls(calls.filter((call) => call.outcome === activeFilter));
+    // Apply all filters and sorting
+    let filtered = calls;
+
+    // Filter by outcome
+    if (activeFilter !== "all") {
+      filtered = filtered.filter((call) => call.outcome === activeFilter);
     }
-  }, [calls, activeFilter]);
+
+    // Filter by status
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((call) => call.status === statusFilter);
+    }
+
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((call) =>
+        call.transcript.filename.toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by date range
+    if (startDate) {
+      const start = new Date(startDate);
+      filtered = filtered.filter((call) => new Date(call.createdAt) >= start);
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999); // Include the entire end date
+      filtered = filtered.filter((call) => new Date(call.createdAt) <= end);
+    }
+
+    // Sort
+    filtered = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "date-desc":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "date-asc":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case "duration-desc":
+          return (b.transcript.durationSeconds || 0) - (a.transcript.durationSeconds || 0);
+        case "signals-desc":
+          return b._count.signals - a._count.signals;
+        default:
+          return 0;
+      }
+    });
+
+    setFilteredCalls(filtered);
+  }, [calls, activeFilter, statusFilter, searchQuery, sortBy, startDate, endDate]);
 
   return (
     <>
@@ -64,6 +131,119 @@ export default function CallsListClient({ calls, stats }: CallsListClientProps) 
           </div>
           <div className="text-sm text-[#666] dark:text-[#999]">Failed</div>
         </div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="mb-6 rounded-xl border border-[#e5e5e5] bg-white p-4 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {/* Search */}
+          <div>
+            <label className="mb-1 block text-xs text-[#666] dark:text-[#999]">
+              Search
+            </label>
+            <input
+              type="search"
+              placeholder="Search by filename..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-2 text-sm text-[#1a1a1a] placeholder-[#999] focus:border-[#ff6b35] focus:outline-none dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:text-white"
+            />
+          </div>
+
+          {/* Status Filter */}
+          <div>
+            <label className="mb-1 block text-xs text-[#666] dark:text-[#999]">
+              Status
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+              className="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#ff6b35] focus:outline-none dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:text-white"
+            >
+              <option value="all">All Statuses</option>
+              <option value="complete">Complete</option>
+              <option value="processing">Processing</option>
+              <option value="error">Error</option>
+            </select>
+          </div>
+
+          {/* Sort */}
+          <div>
+            <label className="mb-1 block text-xs text-[#666] dark:text-[#999]">
+              Sort By
+            </label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortBy)}
+              className="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#ff6b35] focus:outline-none dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:text-white"
+            >
+              <option value="date-desc">Newest First</option>
+              <option value="date-asc">Oldest First</option>
+              <option value="duration-desc">Longest First</option>
+              <option value="signals-desc">Most Signals</option>
+            </select>
+          </div>
+
+          {/* Date Range */}
+          <div>
+            <label className="mb-1 block text-xs text-[#666] dark:text-[#999]">
+              Date Range
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full rounded-lg border border-[#e5e5e5] bg-white px-2 py-2 text-xs text-[#1a1a1a] focus:border-[#ff6b35] focus:outline-none dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:text-white"
+              />
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full rounded-lg border border-[#e5e5e5] bg-white px-2 py-2 text-xs text-[#1a1a1a] focus:border-[#ff6b35] focus:outline-none dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:text-white"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Active Filters Summary */}
+        {(searchQuery || statusFilter !== "all" || startDate || endDate) && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="text-xs text-[#666] dark:text-[#999]">
+              Active filters:
+            </span>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="flex items-center gap-1 rounded-full bg-[#f5f5f5] px-2 py-1 text-xs text-[#1a1a1a] hover:bg-[#e5e5e5] dark:bg-[#1a1a1a] dark:text-white dark:hover:bg-[#2a2a2a]"
+              >
+                Search: "{searchQuery}"
+                <span className="text-[#999]">×</span>
+              </button>
+            )}
+            {statusFilter !== "all" && (
+              <button
+                onClick={() => setStatusFilter("all")}
+                className="flex items-center gap-1 rounded-full bg-[#f5f5f5] px-2 py-1 text-xs text-[#1a1a1a] hover:bg-[#e5e5e5] dark:bg-[#1a1a1a] dark:text-white dark:hover:bg-[#2a2a2a]"
+              >
+                Status: {statusFilter}
+                <span className="text-[#999]">×</span>
+              </button>
+            )}
+            {(startDate || endDate) && (
+              <button
+                onClick={() => {
+                  setStartDate("");
+                  setEndDate("");
+                }}
+                className="flex items-center gap-1 rounded-full bg-[#f5f5f5] px-2 py-1 text-xs text-[#1a1a1a] hover:bg-[#e5e5e5] dark:bg-[#1a1a1a] dark:text-white dark:hover:bg-[#2a2a2a]"
+              >
+                Date: {startDate || "..."} to {endDate || "..."}
+                <span className="text-[#999]">×</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Filter Tabs */}
@@ -98,6 +278,34 @@ export default function CallsListClient({ calls, stats }: CallsListClientProps) 
         >
           Failure ({stats.failure})
         </button>
+      </div>
+
+      {/* Results Count & Export */}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="text-sm text-[#666] dark:text-[#999]">
+          Showing {filteredCalls.length} of {calls.length} calls
+        </div>
+        {filteredCalls.length > 0 && (
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 rounded-lg border border-[#e5e5e5] px-3 py-1.5 text-sm font-medium text-[#666] transition-colors hover:bg-[#f5f5f5] dark:border-[#2a2a2a] dark:text-[#999] dark:hover:bg-[#1a1a1a]"
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+              />
+            </svg>
+            Export CSV
+          </button>
+        )}
       </div>
 
       {/* Calls List */}

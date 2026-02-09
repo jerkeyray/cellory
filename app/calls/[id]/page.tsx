@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import TagsSection from "./TagsSection";
+import NotesSection from "./NotesSection";
 
 interface Signal {
   id: string;
@@ -573,6 +575,12 @@ export default function CallDetailPage() {
                 </dl>
               </div>
             )}
+
+            {/* Tags */}
+            <TagsSection callId={call.id} />
+
+            {/* Notes */}
+            <NotesSection callId={call.id} />
           </div>
         </div>
       </div>

@@ -228,9 +228,34 @@ export default function TranscriptDetailPage() {
           <div className="lg:col-span-2">
             {/* Transcript Content */}
             <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-              <h2 className="mb-4 text-lg font-semibold text-[#1a1a1a] dark:text-white">
-                Transcript
-              </h2>
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-[#1a1a1a] dark:text-white">
+                  Transcript
+                </h2>
+
+                {/* Analyze Call Button */}
+                {transcript.status === "ready" && (
+                  <Link
+                    href={`/calls/new?transcriptId=${transcript.id}`}
+                    className="inline-flex items-center gap-2 rounded-lg bg-[#ff6b35] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#e55a2b]"
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                      />
+                    </svg>
+                    Analyze Call
+                  </Link>
+                )}
+              </div>
 
               {transcript.status === "processing" ? (
                 <div className="py-12 text-center text-[#666] dark:text-[#999]">
@@ -263,29 +288,6 @@ export default function TranscriptDetailPage() {
                 </div>
               )}
             </div>
-
-            {/* Analyze Call Button */}
-            {transcript.status === "ready" && (
-              <Link
-                href={`/calls/new?transcriptId=${transcript.id}`}
-                className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#ff6b35] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#e55a2b]"
-              >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-                Analyze Call
-              </Link>
-            )}
           </div>
 
           {/* Sidebar */}

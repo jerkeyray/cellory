@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { prisma } from "@/app/lib/prisma";
 
 export default async function Home() {
   const session = await auth();
@@ -9,6 +10,22 @@ export default async function Home() {
   if (!session?.user) {
     redirect("/auth/signin");
   }
+
+  // Fetch real stats
+  const transcriptsCount = await prisma.transcript.count();
+  const callsCount = await prisma.call.count({ where: { status: "complete" } });
+  const playbooksCount = await prisma.playbook.count();
+
+  const successCalls = await prisma.call.count({
+    where: { status: "complete", outcome: "success" },
+  });
+  const totalCompleteCalls = await prisma.call.count({
+    where: { status: "complete" },
+  });
+  const successRate =
+    totalCompleteCalls > 0
+      ? ((successCalls / totalCompleteCalls) * 100).toFixed(1)
+      : "—";
 
   return (
     <div className="min-h-[calc(100vh-73px)] bg-white dark:bg-[#0a0a0a]">
@@ -111,28 +128,30 @@ export default async function Home() {
           </Link>
         </div>
 
-        {/* Stats Section (Placeholder) */}
+        {/* Stats Section */}
         <div className="mt-16 grid gap-6 md:grid-cols-4">
           <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-            <div className="text-3xl font-bold text-[#ff6b35]">0</div>
+            <div className="text-3xl font-bold text-[#ff6b35]">{transcriptsCount}</div>
             <div className="mt-1 text-sm text-[#666] dark:text-[#999]">
               Transcripts
             </div>
           </div>
           <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-            <div className="text-3xl font-bold text-[#ff6b35]">0</div>
+            <div className="text-3xl font-bold text-[#ff6b35]">{callsCount}</div>
             <div className="mt-1 text-sm text-[#666] dark:text-[#999]">
               Calls Analyzed
             </div>
           </div>
           <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-            <div className="text-3xl font-bold text-[#ff6b35]">0</div>
+            <div className="text-3xl font-bold text-[#ff6b35]">{playbooksCount}</div>
             <div className="mt-1 text-sm text-[#666] dark:text-[#999]">
               Playbooks Generated
             </div>
           </div>
           <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-            <div className="text-3xl font-bold text-[#ff6b35]">—</div>
+            <div className="text-3xl font-bold text-[#ff6b35]">
+              {typeof successRate === "string" ? successRate : `${successRate}%`}
+            </div>
             <div className="mt-1 text-sm text-[#666] dark:text-[#999]">
               Success Rate
             </div>

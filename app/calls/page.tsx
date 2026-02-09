@@ -12,6 +12,13 @@ export default async function CallsPage() {
           durationSeconds: true,
         },
       },
+      tags: {
+        select: {
+          id: true,
+          name: true,
+          color: true,
+        },
+      },
       _count: {
         select: { signals: true },
       },
