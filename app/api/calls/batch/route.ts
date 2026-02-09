@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
     const transcripts = await prisma.transcript.findMany({
       where: {
         id: { in: transcriptIds },
+        userId: session.user.id,
         status: "ready", // Only process ready transcripts
       },
       select: {
@@ -75,6 +76,7 @@ export async function POST(request: NextRequest) {
       unanalyzedTranscripts.map(async (transcript) => {
         return await prisma.call.create({
           data: {
+            userId: session.user.id,
             transcriptId: transcript.id,
             outcome: "success", // Default, will be updated by processing
             status: "pending",

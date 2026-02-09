@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { prisma } from "@/app/lib/prisma";
 
 /**
@@ -10,6 +11,11 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
     const { content } = await request.json();
 
@@ -21,8 +27,8 @@ export async function POST(
     }
 
     // Check if call exists
-    const call = await prisma.call.findUnique({
-      where: { id },
+    const call = await prisma.call.findFirst({
+      where: { id, userId: session.user.id },
     });
 
     if (!call) {
@@ -56,7 +62,19 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
+    const call = await prisma.call.findFirst({
+      where: { id, userId: session.user.id },
+      select: { id: true },
+    });
+    if (!call) {
+      return NextResponse.json({ error: "Call not found" }, { status: 404 });
+    }
     const notes = await prisma.callNote.findMany({
       where: { callId: id },
       orderBy: { createdAt: "desc" },

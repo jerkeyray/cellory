@@ -1,8 +1,15 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import NewCallForm from "./NewCallForm";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
-export default function NewCallPage() {
+export default async function NewCallPage() {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/auth/signin");
+  }
+
   return (
     <div className="min-h-[calc(100vh-73px)] bg-white">
       <div className="mx-auto max-w-3xl px-6 py-12">

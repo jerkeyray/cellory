@@ -1,13 +1,21 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { prisma } from "@/app/lib/prisma";
+import { auth } from "@/auth";
 import CallsListClient from "./CallsListClient";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { redirect } from "next/navigation";
 
 export default async function CallsPage() {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/auth/signin");
+  }
+
   // Fetch calls server-side with all necessary data
   const calls = await prisma.call.findMany({
+    where: { userId: session.user.id },
     include: {
       transcript: {
         select: {
@@ -37,7 +45,9 @@ export default async function CallsPage() {
   };
 
   // Check if we should show playbook generation prompt
-  const playbooksCount = await prisma.playbook.count();
+  const playbooksCount = await prisma.playbook.count({
+    where: { userId: session.user.id },
+  });
   const showPlaybookPrompt = calls.length >= 3 && playbooksCount === 0;
 
   return (

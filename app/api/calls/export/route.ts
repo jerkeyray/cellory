@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { prisma } from "@/app/lib/prisma";
 
 /**
@@ -7,6 +8,11 @@ import { prisma } from "@/app/lib/prisma";
  */
 export async function GET(request: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const outcome = searchParams.get("outcome");
     const status = searchParams.get("status");
@@ -14,7 +20,7 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get("endDate");
 
     // Build where clause
-    const where: any = {};
+    const where: any = { userId: session.user.id };
 
     if (outcome && outcome !== "all") {
       where.outcome = outcome;

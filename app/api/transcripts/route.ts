@@ -12,6 +12,9 @@ export async function GET() {
 
     // Fetch all transcripts
     const transcripts = await prisma.transcript.findMany({
+      where: {
+        userId: session.user.id,
+      },
       select: {
         id: true,
         filename: true,

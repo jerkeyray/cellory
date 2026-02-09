@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { prisma } from "@/app/lib/prisma";
+import { auth } from "@/auth";
 import { compareOutcomes, generateSuccessInsights } from "@/app/lib/comparator";
 import { AggregateFeatures } from "@/app/lib/aggregator";
 import { AggregateFeaturesV3 } from "@/app/lib/aggregator-v3";
 import GeneratePlaybookButton from "./GeneratePlaybookButton";
+import { redirect } from "next/navigation";
 
 interface Differentiator {
   feature: string;
@@ -53,10 +55,16 @@ function formatValue(value: number, feature: string) {
 }
 
 export default async function ComparePage() {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/auth/signin");
+  }
+
   // Fetch comparison data server-side
   // Get only aggregate features for successful calls
   const successCalls = await prisma.call.findMany({
     where: {
+      userId: session.user.id,
       outcome: "success",
       status: "complete",
       aggregates: { some: {} }, // Only calls with aggregates
@@ -72,6 +80,7 @@ export default async function ComparePage() {
   // Get only aggregate features for failed calls
   const failureCalls = await prisma.call.findMany({
     where: {
+      userId: session.user.id,
       outcome: "failure",
       status: "complete",
       aggregates: { some: {} }, // Only calls with aggregates

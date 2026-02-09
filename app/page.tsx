@@ -15,15 +15,21 @@ export default async function Home() {
   }
 
   // Fetch real stats
-  const transcriptsCount = await prisma.transcript.count();
-  const callsCount = await prisma.call.count({ where: { status: "complete" } });
-  const playbooksCount = await prisma.playbook.count();
+  const transcriptsCount = await prisma.transcript.count({
+    where: { userId: session.user.id },
+  });
+  const callsCount = await prisma.call.count({
+    where: { status: "complete", userId: session.user.id },
+  });
+  const playbooksCount = await prisma.playbook.count({
+    where: { userId: session.user.id },
+  });
 
   const successCalls = await prisma.call.count({
-    where: { status: "complete", outcome: "success" },
+    where: { status: "complete", outcome: "success", userId: session.user.id },
   });
   const totalCompleteCalls = await prisma.call.count({
-    where: { status: "complete" },
+    where: { status: "complete", userId: session.user.id },
   });
   const successRate =
     totalCompleteCalls > 0

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { prisma } from "@/app/lib/prisma";
 
 /**
@@ -10,9 +11,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
-    const playbook = await prisma.playbook.findUnique({
-      where: { id },
+    const playbook = await prisma.playbook.findFirst({
+      where: { id, userId: session.user.id },
     });
 
     if (!playbook) {
@@ -41,11 +47,16 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
     const { title, content } = await request.json();
 
-    const playbook = await prisma.playbook.findUnique({
-      where: { id },
+    const playbook = await prisma.playbook.findFirst({
+      where: { id, userId: session.user.id },
     });
 
     if (!playbook) {
@@ -82,9 +93,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
-    const playbook = await prisma.playbook.findUnique({
-      where: { id },
+    const playbook = await prisma.playbook.findFirst({
+      where: { id, userId: session.user.id },
     });
 
     if (!playbook) {

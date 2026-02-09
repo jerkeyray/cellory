@@ -10,7 +10,7 @@ import { chunkTranscript } from "./chunker";
 import { extractMarkersBatchV3, mergeExtractionResultsV3 } from "./signals-v3";
 import { aggregateSignalsV3 } from "./aggregator-v3";
 import { invalidateComparisonCache } from "./comparison-cache";
-import { buildBehavioralSummary } from "./backboard";
+import { sendToBackboard } from "./backboard";
 
 export interface PipelineResult {
   callId: string;
@@ -114,17 +114,27 @@ export async function processCall(callId: string): Promise<PipelineResult> {
       },
     });
 
-    // Step 6: Build behavioral summary (non-blocking, fail-safe)
+    // Step 6: Send to Backboard for cross-call memory (non-blocking)
     try {
-      const summary = buildBehavioralSummary(
+      const backboardThreadId = await sendToBackboard(
+        callId,
+        predictedOutcome || 'unknown',
         merged.markers,
         aggregates,
-        predictedOutcome || "unknown"
+        transcript.content
       );
-      console.log(`[${callId}] Behavioral summary:\n${summary}`);
-    } catch (e) {
-      // Non-blocking — don't fail pipeline on summary errors
-      console.warn(`[${callId}] Behavioral summary skipped:`, e);
+
+      // Store thread ID on Call record if successful
+      if (backboardThreadId) {
+        await prisma.call.update({
+          where: { id: callId },
+          data: { backboardThreadId },
+        });
+        console.log(`[${callId}] Stored Backboard thread ID: ${backboardThreadId}`);
+      }
+    } catch (error) {
+      // Non-blocking — don't fail pipeline on Backboard errors
+      console.error(`[${callId}] Backboard integration failed:`, error);
     }
 
     // Update status to complete

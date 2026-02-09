@@ -1,8 +1,10 @@
 import { prisma } from "@/app/lib/prisma";
+import { auth } from "@/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import PlaybookContent from "./PlaybookContent";
 import PlaybookActions from "./PlaybookActions";
+import { redirect } from "next/navigation";
 
 interface PlaybookDetailPageProps {
   params: Promise<{ id: string }>;
@@ -20,13 +22,17 @@ function formatDate(date: Date) {
 
 export default async function PlaybookDetailPage({ params }: PlaybookDetailPageProps) {
   const { id } = await params;
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/auth/signin");
+  }
   if (!id) {
     notFound();
   }
 
   // Fetch playbook
-  const playbook = await prisma.playbook.findUnique({
-    where: { id },
+  const playbook = await prisma.playbook.findFirst({
+    where: { id, userId: session.user.id },
   });
 
   if (!playbook) {

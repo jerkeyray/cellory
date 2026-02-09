@@ -21,8 +21,8 @@ export async function GET(
     const { id } = await params;
 
     // Fetch call with all related data
-    const call = await prisma.call.findUnique({
-      where: { id },
+    const call = await prisma.call.findFirst({
+      where: { id, userId: session.user.id },
       include: {
         transcript: {
           select: {
@@ -80,8 +80,8 @@ export async function DELETE(
     const { id } = await params;
 
     // Check if call exists
-    const call = await prisma.call.findUnique({
-      where: { id },
+    const call = await prisma.call.findFirst({
+      where: { id, userId: session.user.id },
     });
 
     if (!call) {

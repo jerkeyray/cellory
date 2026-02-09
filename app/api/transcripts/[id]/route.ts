@@ -16,8 +16,8 @@ export async function GET(
     const { id } = await params;
 
     // Fetch transcript
-    const transcript = await prisma.transcript.findUnique({
-      where: { id },
+    const transcript = await prisma.transcript.findFirst({
+      where: { id, userId: session.user.id },
       include: {
         calls: {
           select: {
@@ -64,8 +64,8 @@ export async function DELETE(
     const { id } = await params;
 
     // Check if transcript exists
-    const transcript = await prisma.transcript.findUnique({
-      where: { id },
+    const transcript = await prisma.transcript.findFirst({
+      where: { id, userId: session.user.id },
     });
 
     if (!transcript) {

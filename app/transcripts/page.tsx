@@ -1,11 +1,19 @@
 import { prisma } from "@/app/lib/prisma";
+import { auth } from "@/auth";
 import BulkUploadForm from "./BulkUploadForm";
 import TranscriptsClient from "./TranscriptsClient";
 import { PageHeader } from "@/components/page-header";
+import { redirect } from "next/navigation";
 
 export default async function TranscriptsPage() {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/auth/signin");
+  }
+
   // Fetch transcripts server-side
   const transcripts = await prisma.transcript.findMany({
+    where: { userId: session.user.id },
     include: {
       _count: {
         select: { calls: true },

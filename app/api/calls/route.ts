@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const outcome = searchParams.get("outcome") as "success" | "failure" | null;
 
     // Build filter
-    const where: any = {};
+    const where: any = { userId: session.user.id };
     if (outcome) {
       where.outcome = outcome;
     }
@@ -85,8 +85,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if transcript exists and is ready
-    const transcript = await prisma.transcript.findUnique({
-      where: { id: transcriptId },
+    const transcript = await prisma.transcript.findFirst({
+      where: { id: transcriptId, userId: session.user.id },
     });
 
     if (!transcript) {
@@ -106,6 +106,7 @@ export async function POST(request: NextRequest) {
     // Create call with placeholder outcome (will be auto-determined)
     const call = await prisma.call.create({
       data: {
+        userId: session.user.id,
         transcriptId,
         outcome: "success", // Placeholder, will be updated by AI
         status: "pending",

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { prisma } from "@/app/lib/prisma";
 
 /**
@@ -7,10 +8,20 @@ import { prisma } from "@/app/lib/prisma";
  */
 export async function GET() {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     // Get all tags grouped by name
     const tags = await prisma.callTag.groupBy({
       by: ["name", "color"],
       _count: { name: true },
+      where: {
+        call: {
+          userId: session.user.id,
+        },
+      },
       orderBy: { _count: { name: "desc" } },
     });
 

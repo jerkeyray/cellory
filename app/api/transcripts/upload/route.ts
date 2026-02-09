@@ -59,6 +59,7 @@ export async function POST(request: Request) {
     // Create transcript record with processing status
     const transcript = await prisma.transcript.create({
       data: {
+        userId: session.user.id,
         filename: file.name,
         content: "", // Will be filled after transcription
         status: "processing",

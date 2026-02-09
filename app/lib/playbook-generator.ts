@@ -47,9 +47,38 @@ export async function generatePlaybook(
   }
 
   try {
+    // ENHANCEMENT: Query Backboard for historical context (RAG)
+    let historicalContext = '';
+    try {
+      const { queryBackboardForContext } = await import('./backboard');
+
+      // Get examples from both success and failure outcomes
+      const successExamples = await queryBackboardForContext('success', 3);
+      const failureExamples = await queryBackboardForContext('failure', 3);
+
+      if (successExamples.length > 0 || failureExamples.length > 0) {
+        historicalContext = `
+
+## Historical Context from Backboard
+
+### Success Call Patterns
+${successExamples.length > 0 ? successExamples.join('\n\n---\n\n') : 'No historical data yet'}
+
+### Failure Call Patterns
+${failureExamples.length > 0 ? failureExamples.join('\n\n---\n\n') : 'No historical data yet'}
+
+Use these real-world examples to inform specific, actionable recommendations in the playbook.
+`;
+        console.log('[Playbook] Injected historical context from Backboard');
+      }
+    } catch (ragError) {
+      console.warn('[Playbook] RAG retrieval failed, continuing without historical context:', ragError);
+    }
+
+    // Generate playbook with context
     const result = await generateText({
       model: openai("gpt-4o"), // ONLY gpt-4o for playbooks
-      prompt: buildPlaybookPrompt(comparison),
+      prompt: buildPlaybookPrompt(comparison) + historicalContext,
       temperature: 0.3, // Slightly creative but consistent
     });
 
@@ -295,9 +324,30 @@ export async function generateSuccessPlaybook(
   }
 
   try {
+    // ENHANCEMENT: Query Backboard for historical success patterns
+    let historicalContext = '';
+    try {
+      const { queryBackboardForContext } = await import('./backboard');
+      const successExamples = await queryBackboardForContext('success', 5);
+
+      if (successExamples.length > 0) {
+        historicalContext = `
+
+## Historical Success Patterns from Backboard
+
+${successExamples.join('\n\n---\n\n')}
+
+Use these real examples to identify consistent patterns that lead to success.
+`;
+        console.log('[Success Playbook] Injected historical context from Backboard');
+      }
+    } catch (ragError) {
+      console.warn('[Success Playbook] RAG retrieval failed:', ragError);
+    }
+
     const result = await generateText({
       model: openai("gpt-4o"),
-      prompt: buildSuccessPlaybookPrompt(insights),
+      prompt: buildSuccessPlaybookPrompt(insights) + historicalContext,
       temperature: 0.3,
     });
 

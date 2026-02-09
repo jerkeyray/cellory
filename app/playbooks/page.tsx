@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/app/lib/prisma";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
 function formatDate(date: Date) {
   return date.toLocaleDateString("en-US", {
@@ -12,8 +14,14 @@ function formatDate(date: Date) {
 }
 
 export default async function PlaybooksPage() {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/auth/signin");
+  }
+
   // Fetch all playbooks
   const playbooks = await prisma.playbook.findMany({
+    where: { userId: session.user.id },
     orderBy: { createdAt: "desc" },
   });
 

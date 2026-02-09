@@ -46,6 +46,7 @@ enum CallStatus {
 
 model Transcript {
   id                String           @id @default(uuid())
+  userId            String           @map("user_id")
   filename          String
   content           String           @db.Text
   durationSeconds   Int?
@@ -56,25 +57,30 @@ model Transcript {
   status            TranscriptStatus @default(processing)
   createdAt         DateTime         @default(now())
 
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   calls             Call[]
 
+  @@index([userId])
   @@map("transcripts")
 }
 
 model Call {
   id                 String      @id @default(uuid())
+  userId            String      @map("user_id")
   transcriptId       String      @map("transcript_id")
   outcome           CallOutcome
   backboardThreadId String?     @map("backboard_thread_id")
   status            CallStatus  @default(pending)
   createdAt         DateTime    @default(now()) @map("created_at")
 
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   transcript   Transcript      @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
   signals      CallSignal[]
   aggregates   CallAggregate[]
   tags         CallTag[]
   notes        CallNote[]
 
+  @@index([userId])
   @@index([transcriptId])
   @@index([outcome, status])
   @@map("calls")
@@ -110,6 +116,7 @@ model CallAggregate {
 
 model Playbook {
   id                   String   @id @default(uuid())
+  userId               String   @map("user_id")
   title                String
   content              String   @db.Text
   callCount            Int      @map("call_count")
@@ -117,6 +124,9 @@ model Playbook {
   backboardDocumentId  String?   @map("backboard_document_id")
   createdAt            DateTime @default(now()) @map("created_at")
 
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
   @@map("playbooks")
 }
 
@@ -189,6 +199,9 @@ model User {
   emailVerified DateTime? @map("email_verified")
   image         String?
 
+  transcripts Transcript[]
+  calls       Call[]
+  playbooks   Playbook[]
   accounts Account[]
   sessions Session[]
 

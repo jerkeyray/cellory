@@ -1,12 +1,19 @@
 import { prisma } from "@/app/lib/prisma";
+import { auth } from "@/auth";
 import StatsCard from "./StatsCard";
 import CallVolumeChart from "./CallVolumeChart";
 import MarkerDistribution from "./MarkerDistribution";
+import { redirect } from "next/navigation";
 
 export default async function AnalyticsPage() {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/auth/signin");
+  }
+
   // Fetch all complete calls with aggregates
   const calls = await prisma.call.findMany({
-    where: { status: "complete" },
+    where: { status: "complete", userId: session.user.id },
     include: {
       transcript: {
         select: {

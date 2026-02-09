@@ -35,6 +35,7 @@ export async function GET() {
     // Get only aggregate features for successful calls
     const successCalls = await prisma.call.findMany({
       where: {
+        userId,
         outcome: "success",
         status: "complete",
         aggregates: { some: {} }, // Only calls with aggregates
@@ -50,6 +51,7 @@ export async function GET() {
     // Get only aggregate features for failed calls
     const failureCalls = await prisma.call.findMany({
       where: {
+        userId,
         outcome: "failure",
         status: "complete",
         aggregates: { some: {} }, // Only calls with aggregates
