@@ -7,8 +7,10 @@
 
 import { prisma } from "@/app/lib/prisma";
 import { chunkTranscript } from "./chunker";
-import { extractMarkersBatch, mergeExtractionResults } from "./signals-v2";
-import { aggregateSignals } from "./aggregator";
+import { extractMarkersBatchV3, mergeExtractionResultsV3 } from "./signals-v3";
+import { aggregateSignalsV3 } from "./aggregator-v3";
+import { invalidateComparisonCache } from "./comparison-cache";
+import { buildBehavioralSummary } from "./backboard";
 
 export interface PipelineResult {
   callId: string;
@@ -57,12 +59,12 @@ export async function processCall(callId: string): Promise<PipelineResult> {
 
     console.log(`[${callId}] Created ${chunks.length} chunks`);
 
-    // Step 2: Extract agent-trainable markers (gpt-4o-mini, costs money)
-    console.log(`[${callId}] Extracting markers...`);
-    const extractionResults = await extractMarkersBatch(chunks);
-    const merged = mergeExtractionResults(extractionResults);
+    // Step 2: Extract decision-grade markers (gpt-4o-mini, costs money)
+    console.log(`[${callId}] Extracting v3 markers...`);
+    const extractionResults = await extractMarkersBatchV3(chunks);
+    const merged = mergeExtractionResultsV3(extractionResults);
 
-    console.log(`[${callId}] Extracted ${merged.agent_markers.length} markers`);
+    console.log(`[${callId}] Extracted ${merged.markers.length} markers`);
     console.log(`[${callId}] Predicted outcome: ${merged.auxiliary_metrics.predicted_outcome || "unknown"}`);
 
     // Auto-set outcome from AI prediction
@@ -74,20 +76,20 @@ export async function processCall(callId: string): Promise<PipelineResult> {
       });
     }
 
-    // Step 3: Persist markers
+    // Step 3: Persist markers (single time field maps to both startTime/endTime for DB compat)
     await prisma.callSignal.createMany({
-      data: merged.agent_markers.map((marker) => ({
+      data: merged.markers.map((marker) => ({
         callId,
-        chunkIndex: Math.floor(marker.startTime / 75),
+        chunkIndex: Math.floor(marker.time / 75),
         signalType: marker.type,
-        signalData: marker as any, // Store full marker object
+        signalData: marker as any,
         confidence: marker.confidence,
-        startTime: marker.startTime,
-        endTime: marker.endTime,
+        startTime: marker.time,
+        endTime: marker.time,
       })),
     });
 
-    // Store auxiliary metrics in call aggregate
+    // Store auxiliary metrics
     const auxiliaryMetrics = merged.auxiliary_metrics;
 
     // Update status to aggregating
@@ -97,28 +99,33 @@ export async function processCall(callId: string): Promise<PipelineResult> {
     });
 
     // Step 4: Aggregate markers (pure computation, $0)
-    console.log(`[${callId}] Aggregating markers...`);
-    const aggregates = aggregateSignals(
-      merged.agent_markers.map(m => ({
-        type: m.type,
-        confidence: m.confidence,
-        startTime: m.startTime,
-        endTime: m.endTime,
-        data: m as any,
-      })) as any,
-      transcript.durationSeconds || 180
-    );
+    console.log(`[${callId}] Aggregating v3 markers...`);
+    const aggregates = aggregateSignalsV3(merged.markers, {
+      predicted_outcome: auxiliaryMetrics.predicted_outcome,
+      outcome_confidence: auxiliaryMetrics.outcome_confidence,
+      call_tone: auxiliaryMetrics.call_tone,
+    });
 
-    // Step 5: Persist aggregates + auxiliary metrics
+    // Step 5: Persist aggregates with schemaVersion: 3
     await prisma.callAggregate.create({
       data: {
         callId,
-        features: {
-          ...aggregates,
-          auxiliary_metrics: auxiliaryMetrics,
-        } as any,
+        features: aggregates as any,
       },
     });
+
+    // Step 6: Build behavioral summary (non-blocking, fail-safe)
+    try {
+      const summary = buildBehavioralSummary(
+        merged.markers,
+        aggregates,
+        predictedOutcome || "unknown"
+      );
+      console.log(`[${callId}] Behavioral summary:\n${summary}`);
+    } catch (e) {
+      // Non-blocking — don't fail pipeline on summary errors
+      console.warn(`[${callId}] Behavioral summary skipped:`, e);
+    }
 
     // Update status to complete
     await prisma.call.update({
@@ -126,12 +133,15 @@ export async function processCall(callId: string): Promise<PipelineResult> {
       data: { status: "complete" },
     });
 
+    // Invalidate comparison cache since we have new completed call data
+    invalidateComparisonCache();
+
     console.log(`[${callId}] Pipeline complete!`);
 
     return {
       callId,
       status: "complete",
-      signalCount: merged.agent_markers.length,
+      signalCount: merged.markers.length,
     };
   } catch (error) {
     console.error(`[${callId}] Pipeline error:`, error);

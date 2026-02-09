@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/app/lib/prisma";
+import { invalidateComparisonCache } from "@/app/lib/comparison-cache";
 
 /**
  * GET /api/calls/[id]
@@ -94,6 +95,9 @@ export async function DELETE(
     await prisma.call.delete({
       where: { id },
     });
+
+    // Invalidate comparison cache since call data changed
+    invalidateComparisonCache();
 
     return NextResponse.json({
       message: "Call deleted successfully",

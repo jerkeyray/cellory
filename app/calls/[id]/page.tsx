@@ -39,34 +39,45 @@ export default function CallDetailPage() {
   const [call, setCall] = useState<Call | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
   const [pollInterval, setPollInterval] = useState(5000); // Start at 5s
   const [pollCount, setPollCount] = useState(0);
 
+  // Initial fetch on mount
   useEffect(() => {
     fetchCall();
+  }, [params.id]);
 
-    // Poll while processing with exponential backoff
+  // Polling effect - runs when call status changes
+  useEffect(() => {
+    // Only poll if we have a call and it's still processing
+    if (!call) return;
+
+    const isProcessing =
+      call.status === "pending" ||
+      call.status === "extracting" ||
+      call.status === "aggregating";
+
+    if (!isProcessing) return;
+
+    // Set up polling with exponential backoff
     const interval = setInterval(() => {
-      if (call && (call.status === "pending" || call.status === "extracting" || call.status === "aggregating")) {
-        fetchCall();
-        setPollCount(prev => prev + 1);
+      fetchCall();
+      setPollCount(prev => {
+        const newCount = prev + 1;
 
         // Exponential backoff: 5s → 10s after 30s → 15s after 60s
-        if (pollCount > 12) { // After 60s (12 * 5s)
+        if (newCount > 12) { // After 60s (12 * 5s)
           setPollInterval(15000);
-        } else if (pollCount > 6) { // After 30s (6 * 5s)
+        } else if (newCount > 6) { // After 30s (6 * 5s)
           setPollInterval(10000);
         }
-      }
+
+        return newCount;
+      });
     }, pollInterval);
 
-    setRefreshInterval(interval);
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [params.id, pollInterval]);
+    return () => clearInterval(interval);
+  }, [call?.status, pollInterval]);
 
   const fetchCall = async () => {
     try {
@@ -74,11 +85,6 @@ export default function CallDetailPage() {
       if (!res.ok) throw new Error("Failed to fetch call");
       const data = await res.json();
       setCall(data);
-
-      // Stop polling if complete or error
-      if (data.status === "complete" || data.status === "error") {
-        if (refreshInterval) clearInterval(refreshInterval);
-      }
     } catch (err) {
       setError("Failed to load call");
     } finally {
@@ -104,11 +110,17 @@ export default function CallDetailPage() {
 
   const getMarkerColor = useCallback((type: string) => {
     const colors: Record<string, string> = {
+      // V2 types
       commitment_event: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
       blocker_event: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
       resolution_attempt: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
       control_event: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
       stall_event: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+      // V3 types
+      customer_constraint: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+      agent_response_strategy: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+      control_dynamics: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+      commitment_quality: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
     };
     return colors[type] || "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
   }, []);
@@ -130,6 +142,18 @@ export default function CallDetailPage() {
   }, []);
 
   const aggregate = call?.aggregates[0]?.features;
+
+  // Detect v3 by checking for v3 marker types
+  const isV3 = useMemo(() => {
+    if (!call) return false;
+    const v3Types = [
+      "customer_constraint",
+      "agent_response_strategy",
+      "control_dynamics",
+      "commitment_quality",
+    ];
+    return call.signals.some((s) => v3Types.includes(s.signalType));
+  }, [call]);
 
   // Memoize transcript lines parsing to avoid re-computation
   const transcriptLines = useMemo(() => {
@@ -256,34 +280,93 @@ export default function CallDetailPage() {
                             <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${getMarkerColor(marker.signalType)}`}>
                               {marker.signalType.replace(/_/g, " ")}
                             </span>
-                            {data.subtype && (
+
+                            {/* V3 marker rendering */}
+                            {isV3 && marker.signalType === "customer_constraint" && (
+                              <>
+                                <span className="text-xs text-[#666] dark:text-[#999]">
+                                  {data.constraint_type}
+                                </span>
+                                <span className={`text-xs ${data.explicit ? "text-orange-600 dark:text-orange-400" : "text-[#999]"}`}>
+                                  {data.explicit ? "explicit" : "implicit"}
+                                </span>
+                                <span className="text-xs text-[#666] dark:text-[#999]">
+                                  severity: {(data.severity * 100).toFixed(0)}%
+                                </span>
+                              </>
+                            )}
+                            {isV3 && marker.signalType === "agent_response_strategy" && (
+                              <>
+                                <span className="text-xs text-[#666] dark:text-[#999]">
+                                  {data.strategy.replace(/_/g, " ")}
+                                </span>
+                                <span className="text-xs text-[#999]">
+                                  targets: {data.target_constraint}
+                                </span>
+                              </>
+                            )}
+                            {isV3 && marker.signalType === "control_dynamics" && (
+                              <>
+                                <span className="text-xs text-[#666] dark:text-[#999]">
+                                  {data.event.replace(/_/g, " ")}
+                                </span>
+                                <span className="text-xs text-[#999]">
+                                  cause: {data.cause}
+                                </span>
+                              </>
+                            )}
+                            {isV3 && marker.signalType === "commitment_quality" && (
+                              <>
+                                <span className="text-xs text-[#666] dark:text-[#999]">
+                                  {data.commitment_type}
+                                </span>
+                                <span className="text-xs text-[#999]">
+                                  by: {data.initiated_by}
+                                </span>
+                                <span className="text-xs text-[#999]">
+                                  reversibility: {data.reversibility}
+                                </span>
+                                {data.time_from_last_constraint >= 0 && (
+                                  <span className="text-xs text-[#999]">
+                                    {data.time_from_last_constraint.toFixed(0)}s after constraint
+                                  </span>
+                                )}
+                              </>
+                            )}
+
+                            {/* V2 marker rendering */}
+                            {!isV3 && data.subtype && (
                               <span className="text-xs text-[#666] dark:text-[#999]">
                                 {data.subtype.replace(/_/g, " ")}
                               </span>
                             )}
-                            {data.blockerType && (
+                            {!isV3 && data.blockerType && (
                               <span className="text-xs text-[#666] dark:text-[#999]">
                                 {data.blockerType.replace(/_/g, " ")}
                                 {data.resolved && " ✓ resolved"}
                               </span>
                             )}
-                            {data.strategy && (
+                            {!isV3 && data.strategy && (
                               <span className="text-xs text-[#666] dark:text-[#999]">
                                 strategy: {data.strategy}
                               </span>
                             )}
-                            {data.controller && (
+                            {!isV3 && data.controller && (
                               <span className="text-xs text-[#666] dark:text-[#999]">
                                 {data.controller} control ({data.reason})
                               </span>
                             )}
-                            {data.stallType && (
+                            {!isV3 && data.stallType && (
                               <span className="text-xs text-[#666] dark:text-[#999]">
                                 {data.stallType.replace(/_/g, " ")}
                               </span>
                             )}
+
+                            {/* Common fields */}
                             <span className="text-xs text-[#999]">
-                              {formatTime(marker.startTime)} - {formatTime(marker.endTime)}
+                              {isV3 && data.time !== undefined
+                                ? formatTime(data.time)
+                                : `${formatTime(marker.startTime)} - ${formatTime(marker.endTime)}`}
                             </span>
                             <span className="text-xs text-[#999]">
                               {Math.round(marker.confidence * 100)}%
@@ -361,32 +444,88 @@ export default function CallDetailPage() {
             {aggregate && (
               <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
                 <h3 className="mb-4 text-sm font-semibold text-[#1a1a1a] dark:text-white">
-                  Aggregates
+                  Aggregates {isV3 && <span className="text-xs text-[#999]">(v3)</span>}
                 </h3>
                 <dl className="space-y-3 text-sm">
-                  <div>
-                    <dt className="text-[#666] dark:text-[#999]">Marker Density</dt>
-                    <dd className="mt-1 font-medium text-[#1a1a1a] dark:text-white">
-                      {aggregate.signalDensity?.toFixed(2)} / min
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-[#666] dark:text-[#999]">Avg Confidence</dt>
-                    <dd className="mt-1 font-medium text-[#1a1a1a] dark:text-white">
-                      {Math.round((aggregate.avgConfidence || 0) * 100)}%
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-[#666] dark:text-[#999]">Marker Distribution</dt>
-                    <dd className="mt-1 space-y-1 text-xs">
-                      {Object.entries(aggregate.signalCounts || {}).map(([type, count]) => (
-                        <div key={type} className="flex justify-between">
-                          <span className="text-[#666] dark:text-[#999]">{type.replace(/_/g, " ")}</span>
-                          <span className="font-medium text-[#1a1a1a] dark:text-white">{count as number}</span>
-                        </div>
-                      ))}
-                    </dd>
-                  </div>
+                  {isV3 ? (
+                    <>
+                      {/* V3 Aggregates */}
+                      <div>
+                        <dt className="text-[#666] dark:text-[#999]">Constraints</dt>
+                        <dd className="mt-1 font-medium text-[#1a1a1a] dark:text-white">
+                          {aggregate.constraints_per_call} total
+                        </dd>
+                        {aggregate.time_to_first_constraint !== null && (
+                          <dd className="text-xs text-[#999]">
+                            First at {aggregate.time_to_first_constraint.toFixed(0)}s
+                          </dd>
+                        )}
+                        <dd className="text-xs text-[#999]">
+                          Avg severity: {(aggregate.avg_constraint_severity * 100).toFixed(0)}%
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-[#666] dark:text-[#999]">Resolution</dt>
+                        {aggregate.avg_resolution_latency !== null && (
+                          <dd className="mt-1 font-medium text-[#1a1a1a] dark:text-white">
+                            {aggregate.avg_resolution_latency.toFixed(1)}s avg latency
+                          </dd>
+                        )}
+                        <dd className="text-xs text-[#999]">
+                          {aggregate.unresolved_constraint_count} unresolved
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-[#666] dark:text-[#999]">Control</dt>
+                        <dd className="mt-1 font-medium text-[#1a1a1a] dark:text-white">
+                          {aggregate.control_recoveries} recoveries
+                        </dd>
+                        <dd className="text-xs text-[#999]">
+                          {aggregate.control_recovery_before_commitment
+                            ? "✓ Recovered before commitment"
+                            : "✗ No recovery before commitment"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-[#666] dark:text-[#999]">Commitments</dt>
+                        <dd className="mt-1 font-medium text-[#1a1a1a] dark:text-white">
+                          {aggregate.commitment_count} total
+                        </dd>
+                        {aggregate.commitment_after_unresolved_constraint && (
+                          <dd className="text-xs text-red-600 dark:text-red-400">
+                            ⚠️ Commitment after unresolved
+                          </dd>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* V2 Aggregates */}
+                      <div>
+                        <dt className="text-[#666] dark:text-[#999]">Marker Density</dt>
+                        <dd className="mt-1 font-medium text-[#1a1a1a] dark:text-white">
+                          {aggregate.signalDensity?.toFixed(2)} / min
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-[#666] dark:text-[#999]">Avg Confidence</dt>
+                        <dd className="mt-1 font-medium text-[#1a1a1a] dark:text-white">
+                          {Math.round((aggregate.avgConfidence || 0) * 100)}%
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-[#666] dark:text-[#999]">Marker Distribution</dt>
+                        <dd className="mt-1 space-y-1 text-xs">
+                          {Object.entries(aggregate.signalCounts || {}).map(([type, count]) => (
+                            <div key={type} className="flex justify-between">
+                              <span className="text-[#666] dark:text-[#999]">{type.replace(/_/g, " ")}</span>
+                              <span className="font-medium text-[#1a1a1a] dark:text-white">{count as number}</span>
+                            </div>
+                          ))}
+                        </dd>
+                      </div>
+                    </>
+                  )}
                 </dl>
               </div>
             )}

@@ -8,11 +8,27 @@ import { auth } from "@/auth";
 import { prisma } from "@/app/lib/prisma";
 import { compareOutcomes } from "@/app/lib/comparator";
 import { AggregateFeatures } from "@/app/lib/aggregator";
+import {
+  getCachedComparison,
+  setCachedComparison,
+} from "@/app/lib/comparison-cache";
 
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const userId = session.user.id;
+
+  // Check cache first
+  const cached = getCachedComparison(userId);
+  if (cached) {
+    return NextResponse.json(cached, {
+      headers: {
+        "X-Cache": "HIT",
+      },
+    });
   }
 
   try {
@@ -58,7 +74,14 @@ export async function GET() {
     // Run comparison
     const comparison = compareOutcomes(successAggregates, failureAggregates);
 
-    return NextResponse.json(comparison);
+    // Cache the result
+    setCachedComparison(userId, comparison);
+
+    return NextResponse.json(comparison, {
+      headers: {
+        "X-Cache": "MISS",
+      },
+    });
   } catch (error) {
     console.error("Comparison error:", error);
     return NextResponse.json(

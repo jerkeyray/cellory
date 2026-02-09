@@ -69,7 +69,7 @@ export async function generatePlaybook(
 }
 
 /**
- * Build minimal playbook prompt
+ * Build minimal playbook prompt (version-aware)
  * No examples, no verbose instructions
  */
 function buildPlaybookPrompt(comparison: ComparisonResult): string {
@@ -84,6 +84,54 @@ function buildPlaybookPrompt(comparison: ComparisonResult): string {
     )
     .join("\n");
 
+  // Detect v3 by checking for v3-specific fields
+  const isV3 = (successProfile as any).avg_constraints_per_call !== undefined;
+
+  if (isV3) {
+    // V3 Playbook Prompt
+    const v3Success = successProfile as any;
+    const v3Failure = failureProfile as any;
+
+    return `Generate a concise behavioral playbook for financial call agents based on this analysis.
+
+Sample: ${comparison.successCount} successful calls, ${comparison.failureCount} failed calls
+
+Key Differentiators (Success vs Failure):
+${topDiffs}
+
+Success Profile:
+- Constraints per call: ${v3Success.avg_constraints_per_call.toFixed(1)}
+- Avg resolution latency: ${v3Success.avg_resolution_latency !== null ? v3Success.avg_resolution_latency.toFixed(1) + "s" : "N/A"}
+- Control recovery before commitment: ${(v3Success.control_recovery_before_commitment_rate * 100).toFixed(0)}%
+- Unresolved constraints: ${v3Success.avg_unresolved_constraints.toFixed(1)}
+- Constraint severity: ${(v3Success.avg_constraint_severity * 100).toFixed(0)}%
+
+Failure Profile:
+- Constraints per call: ${v3Failure.avg_constraints_per_call.toFixed(1)}
+- Avg resolution latency: ${v3Failure.avg_resolution_latency !== null ? v3Failure.avg_resolution_latency.toFixed(1) + "s" : "N/A"}
+- Control recovery before commitment: ${(v3Failure.control_recovery_before_commitment_rate * 100).toFixed(0)}%
+- Unresolved constraints: ${v3Failure.avg_unresolved_constraints.toFixed(1)}
+- Constraint severity: ${(v3Failure.avg_constraint_severity * 100).toFixed(0)}%
+
+Output format (markdown):
+# Behavioral Playbook
+
+## Constraint Response Strategy
+[Guidance on handling each constraint type (trust, capability, time, authority, risk, clarity) based on data]
+
+## Resolution Timing
+[Guidance on when and how quickly to respond to constraints based on data]
+
+## Control Recovery Patterns
+[Guidance on when to recover control and maintain it through to commitment based on data]
+
+## Commitment Approach
+[Guidance on when to push for commitment vs. wait based on data]
+
+Keep guidance specific, actionable, and data-driven. No generic advice.`;
+  }
+
+  // V2 Playbook Prompt
   return `Generate a concise behavioral playbook for financial call agents based on this analysis.
 
 Sample: ${comparison.successCount} successful calls, ${comparison.failureCount} failed calls
@@ -92,16 +140,16 @@ Key Differentiators (Success vs Failure):
 ${topDiffs}
 
 Success Profile:
-- Avg signals: ${successProfile.avgSignalCount.toFixed(1)}
-- Signal density: ${successProfile.avgSignalDensity.toFixed(2)}/min
-- First signal at: ${successProfile.avgFirstSignalTime.toFixed(1)}s
-- Signal distribution: ${(successProfile.earlySignalRatio * 100).toFixed(0)}% early, ${(successProfile.midSignalRatio * 100).toFixed(0)}% mid, ${(successProfile.lateSignalRatio * 100).toFixed(0)}% late
+- Avg signals: ${(successProfile as any).avgSignalCount.toFixed(1)}
+- Signal density: ${(successProfile as any).avgSignalDensity.toFixed(2)}/min
+- First signal at: ${(successProfile as any).avgFirstSignalTime.toFixed(1)}s
+- Signal distribution: ${((successProfile as any).earlySignalRatio * 100).toFixed(0)}% early, ${((successProfile as any).midSignalRatio * 100).toFixed(0)}% mid, ${((successProfile as any).lateSignalRatio * 100).toFixed(0)}% late
 
 Failure Profile:
-- Avg signals: ${failureProfile.avgSignalCount.toFixed(1)}
-- Signal density: ${failureProfile.avgSignalDensity.toFixed(2)}/min
-- First signal at: ${failureProfile.avgFirstSignalTime.toFixed(1)}s
-- Signal distribution: ${(failureProfile.earlySignalRatio * 100).toFixed(0)}% early, ${(failureProfile.midSignalRatio * 100).toFixed(0)}% mid, ${(failureProfile.lateSignalRatio * 100).toFixed(0)}% late
+- Avg signals: ${(failureProfile as any).avgSignalCount.toFixed(1)}
+- Signal density: ${(failureProfile as any).avgSignalDensity.toFixed(2)}/min
+- First signal at: ${(failureProfile as any).avgFirstSignalTime.toFixed(1)}s
+- Signal distribution: ${((failureProfile as any).earlySignalRatio * 100).toFixed(0)}% early, ${((failureProfile as any).midSignalRatio * 100).toFixed(0)}% mid, ${((failureProfile as any).lateSignalRatio * 100).toFixed(0)}% late
 
 Output format (markdown):
 # Behavioral Playbook

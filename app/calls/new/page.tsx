@@ -32,7 +32,7 @@ export default function NewCallPage() {
             New Call Analysis
           </h1>
           <p className="mt-2 text-sm text-[#666] dark:text-[#999]">
-            Analyze a transcript to extract behavioral signals
+            AI will analyze the transcript and automatically determine the outcome
           </p>
         </div>
 
@@ -50,12 +50,13 @@ export default function NewCallPage() {
         {/* Info */}
         <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950">
           <h3 className="text-sm font-medium text-blue-900 dark:text-blue-200">
-            About Call Analysis
+            How It Works
           </h3>
           <ul className="mt-2 space-y-1 text-sm text-blue-800 dark:text-blue-300">
-            <li>• Behavioral signal extraction (~30s processing time)</li>
+            <li>• AI analyzes conversation and extracts behavioral signals</li>
+            <li>• Automatically determines if the call was a success or failure</li>
             <li>• Feature aggregation for outcome comparison</li>
-            <li>• Results available in real-time as processing completes</li>
+            <li>• Processing takes ~30s, results update in real-time</li>
           </ul>
         </div>
       </div>

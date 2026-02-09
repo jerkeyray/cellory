@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -11,26 +11,55 @@ interface TranscriptListItemProps {
     status: "processing" | "ready" | "error";
     durationSeconds: number | null;
     language: string | null;
-    createdAt: Date;
+    createdAt: string;
     _count: {
       calls: number;
     };
   };
-  formatDuration: (seconds: number | null) => string;
-  formatDate: (date: Date) => string;
-  getStatusBadge: (status: string) => JSX.Element;
 }
 
 export default function TranscriptListItem({
   transcript,
-  formatDuration,
-  formatDate,
-  getStatusBadge,
 }: TranscriptListItemProps) {
   const router = useRouter();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const getStatusBadge = (status: string) => {
+    const styles = {
+      processing: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+      ready: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+      error: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    };
+
+    return (
+      <span
+        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+          styles[status as keyof typeof styles] || ""
+        }`}
+      >
+        {status}
+      </span>
+    );
+  };
+
+  const formatDuration = (seconds: number | null) => {
+    if (!seconds) return "—";
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();

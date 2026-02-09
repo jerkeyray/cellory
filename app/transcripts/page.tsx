@@ -2,53 +2,6 @@ import { prisma } from "@/app/lib/prisma";
 import TranscriptUploadForm from "./TranscriptUploadForm";
 import TranscriptListItem from "./TranscriptListItem";
 
-interface Transcript {
-  id: string;
-  filename: string;
-  status: "processing" | "ready" | "error";
-  durationSeconds: number | null;
-  language: string | null;
-  createdAt: Date;
-  _count: {
-    calls: number;
-  };
-}
-
-function getStatusBadge(status: string) {
-  const styles = {
-    processing: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-    ready: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-    error: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  };
-
-  return (
-    <span
-      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-        styles[status as keyof typeof styles] || ""
-      }`}
-    >
-      {status}
-    </span>
-  );
-}
-
-function formatDuration(seconds: number | null) {
-  if (!seconds) return "—";
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
-}
-
-function formatDate(date: Date) {
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export default async function TranscriptsPage() {
   // Fetch transcripts server-side
   const transcripts = await prisma.transcript.findMany({
@@ -105,10 +58,10 @@ export default async function TranscriptsPage() {
             {transcripts.map((transcript) => (
               <TranscriptListItem
                 key={transcript.id}
-                transcript={transcript}
-                formatDuration={formatDuration}
-                formatDate={formatDate}
-                getStatusBadge={getStatusBadge}
+                transcript={{
+                  ...transcript,
+                  createdAt: transcript.createdAt.toISOString(),
+                }}
               />
             ))}
           </div>

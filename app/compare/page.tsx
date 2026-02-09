@@ -33,13 +33,19 @@ interface ComparisonResult {
 }
 
 function formatValue(value: number, feature: string) {
-  if (feature.includes("Ratio")) {
+  if (feature.includes("Ratio") || feature.includes("Rate")) {
     return (value * 100).toFixed(1) + "%";
   }
-  if (feature.includes("Time")) {
+  if (feature.includes("Time") || feature.includes("Latency") || feature.includes("seconds")) {
+    if (feature.includes("seconds") && !feature.includes("Time")) {
+      return value.toFixed(1) + "s";
+    }
     const mins = Math.floor(value / 60);
     const secs = Math.floor(value % 60);
     return `${mins}:${secs.toString().padStart(2, "0")}`;
+  }
+  if (feature.includes("Constraints") || feature.includes("Severity") || feature.includes("Unresolved")) {
+    return value.toFixed(1);
   }
   return value.toFixed(2);
 }
@@ -85,14 +91,14 @@ export default async function ComparePage() {
     (call) => call.aggregates[0].features as unknown as AggregateFeatures
   );
 
-  // Run comparison server-side
-  const comparison: ComparisonResult = compareOutcomes(
-    successAggregates,
-    failureAggregates
-  );
+  // Run comparison server-side (version-aware)
+  const comparison = compareOutcomes(successAggregates, failureAggregates);
 
   const insufficient =
     comparison.successCount === 0 || comparison.failureCount === 0;
+
+  // Check if this is a v3 comparison
+  const isV3 = (comparison as any).schemaVersion === 3;
 
   return (
     <div className="min-h-[calc(100vh-73px)] bg-white dark:bg-[#0a0a0a]">
@@ -205,76 +211,148 @@ export default async function ComparePage() {
               {/* Success Profile */}
               <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
                 <h3 className="mb-4 text-lg font-semibold text-green-600 dark:text-green-400">
-                  Success Profile
+                  Success Profile {isV3 && <span className="text-xs text-[#999]">(v3)</span>}
                 </h3>
                 <dl className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <dt className="text-[#666] dark:text-[#999]">Avg Signals</dt>
-                    <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                      {comparison.successProfile.avgSignalCount.toFixed(1)}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-[#666] dark:text-[#999]">
-                      Signal Density
-                    </dt>
-                    <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                      {comparison.successProfile.avgSignalDensity.toFixed(2)} / min
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-[#666] dark:text-[#999]">Avg Confidence</dt>
-                    <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                      {(comparison.successProfile.avgConfidence * 100).toFixed(0)}%
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-[#666] dark:text-[#999]">Early Signals</dt>
-                    <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                      {(comparison.successProfile.earlySignalRatio * 100).toFixed(
-                        0
-                      )}
-                      %
-                    </dd>
-                  </div>
+                  {isV3 ? (
+                    <>
+                      {/* V3 Success Profile */}
+                      <div className="flex justify-between">
+                        <dt className="text-[#666] dark:text-[#999]">Constraints / Call</dt>
+                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                          {(comparison.successProfile as any).avg_constraints_per_call.toFixed(1)}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-[#666] dark:text-[#999]">Resolution Latency</dt>
+                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                          {(comparison.successProfile as any).avg_resolution_latency !== null
+                            ? `${((comparison.successProfile as any).avg_resolution_latency).toFixed(1)}s`
+                            : "—"}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-[#666] dark:text-[#999]">Control Recovery Rate</dt>
+                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                          {((comparison.successProfile as any).control_recovery_before_commitment_rate * 100).toFixed(0)}%
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-[#666] dark:text-[#999]">Unresolved Constraints</dt>
+                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                          {(comparison.successProfile as any).avg_unresolved_constraints.toFixed(1)}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-[#666] dark:text-[#999]">Constraint Severity</dt>
+                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                          {((comparison.successProfile as any).avg_constraint_severity * 100).toFixed(0)}%
+                        </dd>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* V2 Success Profile */}
+                      <div className="flex justify-between">
+                        <dt className="text-[#666] dark:text-[#999]">Avg Signals</dt>
+                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                          {(comparison.successProfile as any).avgSignalCount.toFixed(1)}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-[#666] dark:text-[#999]">Signal Density</dt>
+                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                          {(comparison.successProfile as any).avgSignalDensity.toFixed(2)} / min
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-[#666] dark:text-[#999]">Avg Confidence</dt>
+                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                          {((comparison.successProfile as any).avgConfidence * 100).toFixed(0)}%
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-[#666] dark:text-[#999]">Early Signals</dt>
+                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                          {((comparison.successProfile as any).earlySignalRatio * 100).toFixed(0)}%
+                        </dd>
+                      </div>
+                    </>
+                  )}
                 </dl>
               </div>
 
               {/* Failure Profile */}
               <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
                 <h3 className="mb-4 text-lg font-semibold text-red-600 dark:text-red-400">
-                  Failure Profile
+                  Failure Profile {isV3 && <span className="text-xs text-[#999]">(v3)</span>}
                 </h3>
                 <dl className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <dt className="text-[#666] dark:text-[#999]">Avg Signals</dt>
-                    <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                      {comparison.failureProfile.avgSignalCount.toFixed(1)}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-[#666] dark:text-[#999]">
-                      Signal Density
-                    </dt>
-                    <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                      {comparison.failureProfile.avgSignalDensity.toFixed(2)} / min
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-[#666] dark:text-[#999]">Avg Confidence</dt>
-                    <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                      {(comparison.failureProfile.avgConfidence * 100).toFixed(0)}%
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-[#666] dark:text-[#999]">Early Signals</dt>
-                    <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                      {(comparison.failureProfile.earlySignalRatio * 100).toFixed(
-                        0
-                      )}
-                      %
-                    </dd>
-                  </div>
+                  {isV3 ? (
+                    <>
+                      {/* V3 Failure Profile */}
+                      <div className="flex justify-between">
+                        <dt className="text-[#666] dark:text-[#999]">Constraints / Call</dt>
+                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                          {(comparison.failureProfile as any).avg_constraints_per_call.toFixed(1)}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-[#666] dark:text-[#999]">Resolution Latency</dt>
+                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                          {(comparison.failureProfile as any).avg_resolution_latency !== null
+                            ? `${((comparison.failureProfile as any).avg_resolution_latency).toFixed(1)}s`
+                            : "—"}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-[#666] dark:text-[#999]">Control Recovery Rate</dt>
+                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                          {((comparison.failureProfile as any).control_recovery_before_commitment_rate * 100).toFixed(0)}%
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-[#666] dark:text-[#999]">Unresolved Constraints</dt>
+                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                          {(comparison.failureProfile as any).avg_unresolved_constraints.toFixed(1)}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-[#666] dark:text-[#999]">Constraint Severity</dt>
+                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                          {((comparison.failureProfile as any).avg_constraint_severity * 100).toFixed(0)}%
+                        </dd>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* V2 Failure Profile */}
+                      <div className="flex justify-between">
+                        <dt className="text-[#666] dark:text-[#999]">Avg Signals</dt>
+                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                          {(comparison.failureProfile as any).avgSignalCount.toFixed(1)}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-[#666] dark:text-[#999]">Signal Density</dt>
+                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                          {(comparison.failureProfile as any).avgSignalDensity.toFixed(2)} / min
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-[#666] dark:text-[#999]">Avg Confidence</dt>
+                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                          {((comparison.failureProfile as any).avgConfidence * 100).toFixed(0)}%
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-[#666] dark:text-[#999]">Early Signals</dt>
+                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                          {((comparison.failureProfile as any).earlySignalRatio * 100).toFixed(0)}%
+                        </dd>
+                      </div>
+                    </>
+                  )}
                 </dl>
               </div>
             </div>
