@@ -43,6 +43,16 @@ export default function TranscriptDetailPage() {
     fetchTranscript();
   }, [params.id]);
 
+  useEffect(() => {
+    if (!transcript || transcript.status !== "processing") return;
+
+    const interval = setInterval(() => {
+      fetchTranscript();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [transcript?.status, params.id]);
+
   const fetchTranscript = async () => {
     try {
       const res = await fetch(`/api/transcripts/${params.id}`);

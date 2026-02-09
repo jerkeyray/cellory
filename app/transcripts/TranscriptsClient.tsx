@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Upload, CheckCircle2, Clock, Trash2 } from "lucide-react";
@@ -42,6 +42,17 @@ export default function TranscriptsClient({ transcripts }: TranscriptsClientProp
   const [deleteModalId, setDeleteModalId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const hasProcessing = transcripts.some((t) => t.status === "processing");
+
+  useEffect(() => {
+    if (!hasProcessing) return;
+
+    const interval = setInterval(() => {
+      router.refresh();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [hasProcessing, router]);
 
   // Filter transcripts that are ready but not analyzed
   const unanalyzedTranscripts = transcripts.filter(
