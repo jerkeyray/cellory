@@ -6,7 +6,6 @@ import { AggregateFeatures } from "@/app/lib/aggregator";
 import { AggregateFeaturesV3 } from "@/app/lib/aggregator-v3";
 import { redirect } from "next/navigation";
 import StatsCard from "./StatsCard";
-import CallVolumeChart from "./CallVolumeChart";
 import MarkerDistribution from "./MarkerDistribution";
 
 interface Differentiator {
@@ -68,6 +67,11 @@ export default async function InsightsPage() {
       transcript: {
         select: {
           durationSeconds: true,
+          qualityScore: true,
+          audioFormat: true,
+          speechRatio: true,
+          avgConfidence: true,
+          nluResults: true,
         },
       },
       signals: true,
@@ -84,6 +88,7 @@ export default async function InsightsPage() {
   const failureCallsCount = calls.filter((c) => c.outcome === "failure").length;
   const successRate = totalCalls > 0 ? (successCallsCount / totalCalls) * 100 : 0;
 
+  // Average resolution latency
   const callsWithLatency = calls.filter((c) => {
     const agg = c.aggregates[0]?.features as any;
     return agg?.avg_resolution_latency !== null && agg?.avg_resolution_latency !== undefined;
@@ -96,22 +101,63 @@ export default async function InsightsPage() {
         }, 0) / callsWithLatency.length
       : null;
 
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-  const callsThisWeek = calls.filter((c) => new Date(c.createdAt) >= oneWeekAgo).length;
+  // Audio quality metrics
+  const callsWithQuality = calls.filter((c) => c.transcript.qualityScore !== null);
+  const avgQualityScore =
+    callsWithQuality.length > 0
+      ? callsWithQuality.reduce((sum, c) => sum + (c.transcript.qualityScore || 0), 0) / callsWithQuality.length
+      : null;
 
-  const callsByDate: Record<string, { success: number; failure: number }> = {};
+  // Quality distribution
+  const qualityDistribution = {
+    high: callsWithQuality.filter((c) => (c.transcript.qualityScore || 0) >= 0.7).length,
+    medium: callsWithQuality.filter((c) => (c.transcript.qualityScore || 0) >= 0.4 && (c.transcript.qualityScore || 0) < 0.7).length,
+    low: callsWithQuality.filter((c) => (c.transcript.qualityScore || 0) < 0.4).length,
+  };
+
+  // Audio format distribution
+  const formatCounts: Record<string, number> = {};
   calls.forEach((call) => {
-    const date = new Date(call.createdAt).toISOString().split("T")[0];
-    if (!callsByDate[date]) {
-      callsByDate[date] = { success: 0, failure: 0 };
-    }
-    if (call.outcome === "success") {
-      callsByDate[date].success++;
-    } else {
-      callsByDate[date].failure++;
+    if (call.transcript.audioFormat) {
+      formatCounts[call.transcript.audioFormat] = (formatCounts[call.transcript.audioFormat] || 0) + 1;
     }
   });
+
+  // Average duration
+  const callsWithDuration = calls.filter((c) => c.transcript.durationSeconds !== null);
+  const avgDuration =
+    callsWithDuration.length > 0
+      ? callsWithDuration.reduce((sum, c) => sum + (c.transcript.durationSeconds || 0), 0) / callsWithDuration.length
+      : null;
+
+  // NLU insights
+  const callsWithNLU = calls.filter((c) => c.transcript.nluResults !== null);
+  let totalObligations = 0;
+  let obligationsWithDeadlines = 0;
+  let regulatoryCompliantCalls = 0;
+  const intentCounts: Record<string, number> = {};
+
+  callsWithNLU.forEach((call) => {
+    const nlu = call.transcript.nluResults as any;
+    if (nlu) {
+      totalObligations += nlu.obligations?.length || 0;
+      obligationsWithDeadlines += nlu.obligations?.filter((o: any) => o.deadline).length || 0;
+
+      // Check regulatory compliance (mini_miranda, fdcpa_disclosure, recording_notice)
+      const hasCompliance = nlu.regulatory_phrases?.some((p: any) =>
+        ['mini_miranda', 'fdcpa_disclosure', 'recording_notice'].includes(p.regulation_type) && p.present
+      );
+      if (hasCompliance) regulatoryCompliantCalls++;
+
+      // Count intents
+      nlu.intents?.forEach((intent: any) => {
+        intentCounts[intent.intent] = (intentCounts[intent.intent] || 0) + 1;
+      });
+    }
+  });
+
+  const regulatoryComplianceRate = callsWithNLU.length > 0 ? (regulatoryCompliantCalls / callsWithNLU.length) * 100 : null;
+  const avgObligationsPerCall = callsWithNLU.length > 0 ? totalObligations / callsWithNLU.length : null;
 
   const markerCounts: Record<string, number> = {};
   calls.forEach((call) => {
@@ -199,18 +245,160 @@ export default async function InsightsPage() {
         <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatsCard title="Total Calls" value={totalCalls.toString()} />
           <StatsCard title="Success Rate" value={`${successRate.toFixed(1)}%`} />
-          <StatsCard title="Calls This Week" value={callsThisWeek.toString()} />
           <StatsCard
-            title="Avg Resolution Latency"
-            value={avgResolutionLatency !== null ? `${avgResolutionLatency.toFixed(1)}s` : "—"}
+            title="Avg Quality Score"
+            value={avgQualityScore !== null ? `${(avgQualityScore * 100).toFixed(0)}%` : "—"}
+          />
+          <StatsCard
+            title="Avg Duration"
+            value={avgDuration !== null ? `${Math.floor(avgDuration / 60)}:${(Math.floor(avgDuration) % 60).toString().padStart(2, '0')}` : "—"}
           />
         </div>
 
-        {/* Trends */}
-        <div className="mb-10 grid gap-6 lg:grid-cols-2">
-          <CallVolumeChart data={callsByDate} />
-          <MarkerDistribution data={markerCounts} />
+        {/* Intelligence Metrics */}
+        <div className="mb-10">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">
+            Intelligence Metrics
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatsCard
+              title="Avg Resolution Latency"
+              value={avgResolutionLatency !== null ? `${avgResolutionLatency.toFixed(1)}s` : "—"}
+            />
+            <StatsCard
+              title="Regulatory Compliance"
+              value={regulatoryComplianceRate !== null ? `${regulatoryComplianceRate.toFixed(0)}%` : "—"}
+            />
+            <StatsCard
+              title="Avg Obligations/Call"
+              value={avgObligationsPerCall !== null ? avgObligationsPerCall.toFixed(1) : "—"}
+            />
+            <StatsCard
+              title="Total Markers"
+              value={calls.reduce((sum, c) => sum + c.signals.length, 0).toString()}
+            />
+          </div>
         </div>
+
+        {/* Insights Grid */}
+        <div className="mb-10 grid gap-6 lg:grid-cols-2">
+          {/* Marker Distribution */}
+          <MarkerDistribution data={markerCounts} />
+
+          {/* Top Intents */}
+          {Object.keys(intentCounts).length > 0 && (
+            <div className="rounded-xl border border bg-white p-6">
+              <h3 className="mb-4 text-lg font-semibold text-foreground">
+                Top Customer Intents
+              </h3>
+              <div className="space-y-3">
+                {Object.entries(intentCounts)
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 5)
+                  .map(([intent, count]) => (
+                    <div key={intent} className="flex items-center gap-3">
+                      <div className="w-40 text-sm text-muted-foreground">
+                        {intent.replace(/_/g, " ")}
+                      </div>
+                      <div className="flex-1">
+                        <div className="h-6 rounded-full bg-gray-100">
+                          <div
+                            className="h-6 rounded-full bg-purple-500"
+                            style={{
+                              width: `${(count / Math.max(...Object.values(intentCounts))) * 100}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div className="w-12 text-right text-sm font-medium text-foreground">
+                        {count}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Audio Quality Insights */}
+        {callsWithQuality.length > 0 && (
+          <div className="mb-10 grid gap-6 lg:grid-cols-2">
+            {/* Quality Distribution */}
+            <div className="rounded-xl border border bg-white p-6">
+              <h3 className="mb-4 text-lg font-semibold text-foreground">
+                Audio Quality Distribution
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-green-500" />
+                    <span className="text-sm text-muted-foreground">High Quality (≥70%)</span>
+                  </div>
+                  <span className="text-lg font-semibold text-foreground">
+                    {qualityDistribution.high}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-yellow-500" />
+                    <span className="text-sm text-muted-foreground">Medium Quality (40-70%)</span>
+                  </div>
+                  <span className="text-lg font-semibold text-foreground">
+                    {qualityDistribution.medium}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-red-500" />
+                    <span className="text-sm text-muted-foreground">Low Quality (&lt;40%)</span>
+                  </div>
+                  <span className="text-lg font-semibold text-foreground">
+                    {qualityDistribution.low}
+                  </span>
+                </div>
+                <div className="mt-4 pt-4 border-t">
+                  <div className="text-xs text-muted-foreground">Average Quality Score</div>
+                  <div className="mt-1 text-2xl font-bold text-foreground">
+                    {(avgQualityScore! * 100).toFixed(0)}%
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Audio Format Distribution */}
+            {Object.keys(formatCounts).length > 0 && (
+              <div className="rounded-xl border border bg-white p-6">
+                <h3 className="mb-4 text-lg font-semibold text-foreground">
+                  Audio Format Distribution
+                </h3>
+                <div className="space-y-3">
+                  {Object.entries(formatCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([format, count]) => (
+                      <div key={format} className="flex items-center gap-3">
+                        <div className="w-24 text-sm font-medium text-foreground uppercase">
+                          {format}
+                        </div>
+                        <div className="flex-1">
+                          <div className="h-6 rounded-full bg-gray-100">
+                            <div
+                              className="h-6 rounded-full bg-blue-500"
+                              style={{
+                                width: `${(count / callsWithQuality.length) * 100}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className="w-16 text-right text-sm text-muted-foreground">
+                          {count} ({((count / callsWithQuality.length) * 100).toFixed(0)}%)
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Outcome Comparison */}
         <div className="mb-4">

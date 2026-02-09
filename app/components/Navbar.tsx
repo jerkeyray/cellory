@@ -18,7 +18,6 @@ const navLinks = [
   { href: "/calls", label: "Calls" },
   { href: "/insights", label: "Insights" },
   { href: "/playbooks", label: "Playbooks" },
-  { href: "/agent", label: "Agent" },
 ];
 
 export default async function Navbar() {
