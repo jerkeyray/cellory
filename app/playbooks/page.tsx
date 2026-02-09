@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/app/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import GeneratePlaybookButton from "./GeneratePlaybookButton";
 
 function formatDate(date: Date) {
   return date.toLocaleDateString("en-US", {
@@ -24,6 +25,13 @@ export default async function PlaybooksPage() {
     where: { userId: session.user.id },
     orderBy: { createdAt: "desc" },
   });
+  const callsWithAggregates = await prisma.call.count({
+    where: {
+      userId: session.user.id,
+      status: "complete",
+      aggregates: { some: {} },
+    },
+  });
 
   return (
     <div className="min-h-[calc(100vh-73px)] bg-white">
@@ -39,25 +47,7 @@ export default async function PlaybooksPage() {
             </p>
           </div>
 
-          <Link
-            href="/compare"
-            className="inline-flex items-center gap-2 rounded-lg bg-[#ff6b35] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#e55a2b]"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-              />
-            </svg>
-            Generate New Playbook
-          </Link>
+          <GeneratePlaybookButton hasData={callsWithAggregates > 0} />
         </div>
 
         {/* Stats */}
@@ -112,14 +102,11 @@ export default async function PlaybooksPage() {
               No playbooks yet
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Generate your first playbook from the Compare page
+              Generate your first playbook from your analyzed calls
             </p>
-            <Link
-              href="/compare"
-              className="mt-4 inline-block text-sm text-[#ff6b35] hover:underline"
-            >
-              Go to Compare →
-            </Link>
+            <div className="mt-4">
+              <GeneratePlaybookButton hasData={callsWithAggregates > 0} />
+            </div>
           </div>
         ) : (
           <div className="grid gap-6">

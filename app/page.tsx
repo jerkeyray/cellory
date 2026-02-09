@@ -66,7 +66,7 @@ export default async function Home() {
                     You have {callsCount} analyzed calls. Generate a coaching playbook from your call patterns.
                   </p>
                   <Button asChild className="mt-4" size="sm">
-                    <Link href="/compare">Generate Playbook</Link>
+                    <Link href="/playbooks">Generate Playbook</Link>
                   </Button>
                 </div>
               </div>

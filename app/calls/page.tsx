@@ -60,7 +60,7 @@ export default async function CallsPage() {
             <>
               {showPlaybookPrompt && (
                 <Button variant="outline" asChild>
-                  <Link href="/compare">Generate Playbook</Link>
+                  <Link href="/playbooks">Generate Playbook</Link>
                 </Button>
               )}
               <Button asChild>

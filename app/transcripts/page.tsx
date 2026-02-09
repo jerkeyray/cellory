@@ -11,29 +11,36 @@ export default async function TranscriptsPage() {
     redirect("/auth/signin");
   }
 
-  // Fetch transcripts server-side
+  // Fetch transcripts server-side with most recent call ID
   const transcripts = await prisma.transcript.findMany({
     where: { userId: session.user.id },
     include: {
       _count: {
         select: { calls: true },
       },
+      calls: {
+        select: { id: true },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
     },
     orderBy: { createdAt: "desc" },
   });
 
-  // Convert dates to strings for client component
+  // Convert dates to strings and extract most recent call ID for client component
   const transcriptsData = transcripts.map((t) => ({
     ...t,
     createdAt: t.createdAt.toISOString(),
+    mostRecentCallId: t.calls[0]?.id || null,
+    calls: undefined, // Don't send full calls array to client
   }));
 
   return (
     <div className="min-h-[calc(100vh-73px)] bg-background">
       <div className="mx-auto max-w-7xl px-6 py-8">
         <PageHeader
-          title="Transcripts"
-          description="Upload recordings and manage transcriptions"
+          title="Recordings"
+          description="Upload and manage your call recordings"
         />
 
         {/* Bulk Upload Form */}

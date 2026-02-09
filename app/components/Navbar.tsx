@@ -14,10 +14,9 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
 const navLinks = [
-  { href: "/transcripts", label: "Transcripts" },
+  { href: "/transcripts", label: "Recordings" },
   { href: "/calls", label: "Calls" },
-  { href: "/analytics", label: "Analytics" },
-  { href: "/compare", label: "Compare" },
+  { href: "/insights", label: "Insights" },
   { href: "/playbooks", label: "Playbooks" },
 ];
 

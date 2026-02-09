@@ -1,7 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 
-export default function CompareLoading() {
+export default function InsightsLoading() {
   return (
     <div className="min-h-[calc(100vh-73px)] bg-background">
       <div className="mx-auto max-w-7xl px-6 py-8">

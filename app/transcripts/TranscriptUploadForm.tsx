@@ -21,7 +21,7 @@ export default function TranscriptUploadForm() {
       if (res.ok) {
         const data = await res.json();
         if (data.status === "ready") {
-          router.push(`/transcripts/${uploadedId}`);
+          router.push(`/calls/new?transcriptId=${uploadedId}`);
           return true; // Stop polling
         } else if (data.status === "error") {
           setError("Transcription failed");

@@ -1,382 +1,42 @@
-"use client";
+import { prisma } from "@/app/lib/prisma";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-
-interface WordTimestamp {
-  word: string;
-  start: number;
-  end: number;
-}
-
-interface Call {
-  id: string;
-  outcome: "success" | "failure";
-  status: string;
-  createdAt: string;
-}
-
-interface Transcript {
-  id: string;
-  filename: string;
-  content: string;
-  status: "processing" | "ready" | "error";
-  durationSeconds: number | null;
-  language: string | null;
-  qualityScore: number | null;
-  wordTimestamps: WordTimestamp[] | null;
-  wordCount: number | null;
-  createdAt: string;
-  calls: Call[];
-}
-
-export default function TranscriptDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const [transcript, setTranscript] = useState<Transcript | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
-
-  useEffect(() => {
-    fetchTranscript();
-  }, [params.id]);
-
-  useEffect(() => {
-    if (!transcript || transcript.status !== "processing") return;
-
-    const interval = setInterval(() => {
-      fetchTranscript();
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [transcript?.status, params.id]);
-
-  const fetchTranscript = async () => {
-    try {
-      const res = await fetch(`/api/transcripts/${params.id}`);
-      if (!res.ok) throw new Error("Failed to fetch transcript");
-      const data = await res.json();
-      setTranscript(data);
-    } catch (err) {
-      setError("Failed to load transcript");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this transcript? This will also delete all associated call analyses.")) {
-      return;
-    }
-
-    setDeleting(true);
-    try {
-      const res = await fetch(`/api/transcripts/${params.id}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) throw new Error("Failed to delete transcript");
-
-      router.push("/transcripts");
-    } catch (err) {
-      setError("Failed to delete transcript");
-      setDeleting(false);
-    }
-  };
-
-  const formatDuration = useCallback((seconds: number | null) => {
-    if (!seconds) return "—";
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  }, []);
-
-  const formatDate = useCallback((date: string) => {
-    return new Date(date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }, []);
-
-  const getStatusBadge = useCallback((status: string) => {
-    const styles = {
-      processing: "bg-blue-100 text-blue-800",
-      ready: "bg-green-100 text-green-800",
-      error: "bg-red-100 text-red-800",
-    };
-
-    return (
-      <span
-        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-          styles[status as keyof typeof styles] || ""
-        }`}
-      >
-        {status}
-      </span>
-    );
-  }, []);
-
-  // Use pre-calculated word count from database, fallback to calculation if not available
-  const wordCount = useMemo(() => {
-    if (!transcript) return 0;
-    if (transcript.wordCount) return transcript.wordCount;
-    // Fallback for old transcripts without wordCount
-    return transcript.content.split(/\s+/).filter(w => w.length > 0).length;
-  }, [transcript?.wordCount, transcript?.content]);
-
-  // Memoize transcript lines parsing
-  const transcriptLines = useMemo(() => {
-    if (!transcript) return [];
-
-    return transcript.content
-      .split('\n')
-      .filter(line => line.trim())
-      .map((line, i, arr) => {
-        const isAgent = line.trim().startsWith('Agent:');
-        const isCustomer = line.trim().startsWith('Customer:');
-
-        if (!isAgent && !isCustomer) return null;
-
-        // Estimate timestamp
-        const estimatedTime = transcript.durationSeconds
-          ? Math.floor((i / arr.length) * transcript.durationSeconds)
-          : i * 5;
-        const minutes = Math.floor(estimatedTime / 60);
-        const seconds = estimatedTime % 60;
-        const timestamp = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-
-        const text = line.replace(/^(Agent:|Customer:)\s*/, '');
-
-        return {
-          index: i,
-          isAgent,
-          isCustomer,
-          timestamp,
-          text,
-        };
-      })
-      .filter(Boolean);
-  }, [transcript?.content, transcript?.durationSeconds]);
-
-  if (loading) {
-    return (
-      <div className="flex min-h-[calc(100vh-73px)] items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#ff6b35] border-t-transparent" />
-      </div>
-    );
+export default async function TranscriptRedirect({
+  params
+}: {
+  params: { id: string }
+}) {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/auth/signin");
   }
 
-  if (error || !transcript) {
-    return (
-      <div className="flex min-h-[calc(100vh-73px)] items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600">{error || "Transcript not found"}</p>
-          <Link
-            href="/transcripts"
-            className="mt-4 inline-block text-sm text-[#ff6b35] hover:underline"
-          >
-            Back to Transcripts
-          </Link>
-        </div>
-      </div>
-    );
+  // Fetch the transcript to verify ownership
+  const transcript = await prisma.transcript.findFirst({
+    where: {
+      id: params.id,
+      userId: session.user.id
+    },
+    include: {
+      calls: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { id: true }
+      }
+    }
+  });
+
+  if (!transcript) {
+    // Transcript doesn't exist or doesn't belong to user
+    redirect("/transcripts");
   }
 
-  return (
-    <div className="min-h-[calc(100vh-73px)] bg-white">
-      <div className="mx-auto max-w-7xl px-6 py-12">
-        {/* Header */}
-        <div className="mb-8">
-          <Link
-            href="/transcripts"
-            className="inline-flex items-center text-sm text-muted-foreground hover:text-[#ff6b35]"
-          >
-            <svg
-              className="mr-2 h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            Back to Transcripts
-          </Link>
+  // If transcript has been analyzed, redirect to most recent call
+  if (transcript.calls.length > 0) {
+    redirect(`/calls/${transcript.calls[0].id}`);
+  }
 
-          <div className="mt-4 flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">
-                {transcript.filename}
-              </h1>
-              <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
-                {getStatusBadge(transcript.status)}
-                <span>{formatDate(transcript.createdAt)}</span>
-              </div>
-            </div>
-
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
-            >
-              {deleting ? "Deleting..." : "Delete"}
-            </button>
-          </div>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Main Content */}
-          <div className="lg:col-span-2">
-            {/* Transcript Content */}
-            <div className="rounded-xl border border bg-white p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-foreground">
-                  Transcript
-                </h2>
-
-                {/* Analyze Call Button */}
-                {transcript.status === "ready" && (
-                  <Link
-                    href={`/calls/new?transcriptId=${transcript.id}`}
-                    className="inline-flex items-center gap-2 rounded-lg bg-[#ff6b35] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#e55a2b]"
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                      />
-                    </svg>
-                    Analyze Call
-                  </Link>
-                )}
-              </div>
-
-              {transcript.status === "processing" ? (
-                <div className="py-12 text-center text-muted-foreground">
-                  Transcription in progress... Refresh the page to check status.
-                </div>
-              ) : transcript.status === "error" ? (
-                <div className="py-12 text-center text-red-600">
-                  Transcription failed. Please try uploading again.
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {transcriptLines.map((line: any) => (
-                    <div
-                      key={line.index}
-                      className="flex gap-3 py-2"
-                    >
-                      <div className="flex-shrink-0 w-16 text-xs text-muted-foreground font-mono pt-0.5">
-                        {line.timestamp}
-                      </div>
-                      <div className="flex-1">
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {line.isAgent ? 'Agent' : 'Customer'}
-                        </span>
-                        <p className="mt-1 text-sm text-foreground">
-                          {line.text}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Metadata */}
-            <div className="rounded-xl border border bg-white p-6">
-              <h3 className="mb-4 text-sm font-semibold text-foreground">
-                Metadata
-              </h3>
-              <dl className="space-y-3 text-sm">
-                <div>
-                  <dt className="text-muted-foreground">Duration</dt>
-                  <dd className="mt-1 font-medium text-foreground">
-                    {formatDuration(transcript.durationSeconds)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Language</dt>
-                  <dd className="mt-1 font-medium text-foreground">
-                    {transcript.language?.toUpperCase() || "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Word Count</dt>
-                  <dd className="mt-1 font-medium text-foreground">
-                    {wordCount}
-                  </dd>
-                </div>
-                {transcript.wordTimestamps && (
-                  <div>
-                    <dt className="text-muted-foreground">Timestamps</dt>
-                    <dd className="mt-1 font-medium text-foreground">
-                      {transcript.wordTimestamps.length} words
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            </div>
-
-            {/* Associated Calls */}
-            <div className="rounded-xl border border bg-white p-6">
-              <h3 className="mb-4 text-sm font-semibold text-foreground">
-                Call Analyses ({transcript.calls.length})
-              </h3>
-
-              {transcript.calls.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No analyses yet
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {transcript.calls.map((call) => (
-                    <Link
-                      key={call.id}
-                      href={`/calls/${call.id}`}
-                      className="block rounded-lg border border p-3 text-sm transition-colors hover:border-[#ff6b35]"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span
-                          className={`font-medium ${
-                            call.outcome === "success"
-                              ? "text-green-600"
-                              : "text-red-600"
-                          }`}
-                        >
-                          {call.outcome === "success" ? "Success" : "Failure"}
-                        </span>
-                        <span className="text-muted-foreground">
-                          {formatDate(call.createdAt)}
-                        </span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  // Otherwise, redirect to analyze page
+  redirect(`/calls/new?transcriptId=${transcript.id}`);
 }

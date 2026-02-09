@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Upload, CheckCircle2, Clock, Trash2 } from "lucide-react";
 import BatchAnalysisBar from "./BatchAnalysisBar";
@@ -27,6 +26,7 @@ interface Transcript {
   durationSeconds: number | null;
   language: string | null;
   createdAt: string;
+  mostRecentCallId: string | null;
   _count: {
     calls: number;
   };
@@ -128,6 +128,21 @@ export default function TranscriptsClient({ transcripts }: TranscriptsClientProp
 
   const transcriptToDelete = transcripts.find((t) => t.id === deleteModalId);
 
+  const handleTranscriptClick = (transcript: Transcript) => {
+    // If transcript is processing or errored, do nothing
+    if (transcript.status === "processing" || transcript.status === "error") {
+      return;
+    }
+
+    // If transcript has been analyzed, navigate to most recent call
+    if (transcript.mostRecentCallId) {
+      router.push(`/calls/${transcript.mostRecentCallId}`);
+    } else {
+      // Otherwise, navigate to analyze page
+      router.push(`/calls/new?transcriptId=${transcript.id}`);
+    }
+  };
+
   return (
     <>
       {/* Batch Analysis Bar */}
@@ -192,9 +207,11 @@ export default function TranscriptsClient({ transcripts }: TranscriptsClientProp
                 )}
 
                 {/* Content */}
-                <Link
-                  href={`/transcripts/${transcript.id}`}
-                  className="block flex-1 min-w-0"
+                <div
+                  onClick={() => handleTranscriptClick(transcript)}
+                  className={`block flex-1 min-w-0 ${
+                    transcript.status === "ready" ? "cursor-pointer" : "cursor-default"
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
@@ -247,7 +264,7 @@ export default function TranscriptsClient({ transcripts }: TranscriptsClientProp
                       </Button>
                     </div>
                   </div>
-                </Link>
+                </div>
               </div>
             </Card>
           ))}

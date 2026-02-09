@@ -17,6 +17,7 @@ interface UploadFile {
   status: "pending" | "uploading" | "processing" | "ready" | "analyzing" | "complete" | "error";
   progress: number;
   transcriptId?: string;
+  callId?: string;
   error?: string;
 }
 
@@ -72,7 +73,7 @@ export default function BulkUploadForm() {
                     setFiles((prev) =>
                       prev.map((f) =>
                         f.id === uploadFile.id
-                          ? { ...f, status: "complete", progress: 100 }
+                          ? { ...f, status: "complete", progress: 100, callId: analysisData.id }
                           : f
                       )
                     );
@@ -391,11 +392,11 @@ export default function BulkUploadForm() {
 
                 {/* Actions */}
                 <div className="flex-shrink-0">
-                  {uploadFile.status === "complete" && uploadFile.transcriptId ? (
+                  {uploadFile.status === "complete" && uploadFile.callId ? (
                     <Button
                       variant="link"
                       size="sm"
-                      onClick={() => router.push(`/transcripts/${uploadFile.transcriptId}`)}
+                      onClick={() => router.push(`/calls/${uploadFile.callId}`)}
                     >
                       View
                     </Button>
@@ -403,9 +404,9 @@ export default function BulkUploadForm() {
                     <Button
                       variant="link"
                       size="sm"
-                      onClick={() => router.push(`/transcripts/${uploadFile.transcriptId}`)}
+                      onClick={() => router.push(`/calls/new?transcriptId=${uploadFile.transcriptId}`)}
                     >
-                      View
+                      Analyze
                     </Button>
                   ) : uploadFile.status === "pending" || uploadFile.status === "error" ? (
                     <Button

@@ -4,8 +4,10 @@ import { auth } from "@/auth";
 import { compareOutcomes, generateSuccessInsights } from "@/app/lib/comparator";
 import { AggregateFeatures } from "@/app/lib/aggregator";
 import { AggregateFeaturesV3 } from "@/app/lib/aggregator-v3";
-import GeneratePlaybookButton from "./GeneratePlaybookButton";
 import { redirect } from "next/navigation";
+import StatsCard from "./StatsCard";
+import CallVolumeChart from "./CallVolumeChart";
+import MarkerDistribution from "./MarkerDistribution";
 
 interface Differentiator {
   feature: string;
@@ -54,11 +56,69 @@ function formatValue(value: number, feature: string) {
   return value.toFixed(2);
 }
 
-export default async function ComparePage() {
+export default async function InsightsPage() {
   const session = await auth();
   if (!session?.user) {
     redirect("/auth/signin");
   }
+
+  const calls = await prisma.call.findMany({
+    where: { status: "complete", userId: session.user.id },
+    include: {
+      transcript: {
+        select: {
+          durationSeconds: true,
+        },
+      },
+      signals: true,
+      aggregates: {
+        select: { features: true },
+        take: 1,
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const totalCalls = calls.length;
+  const successCallsCount = calls.filter((c) => c.outcome === "success").length;
+  const failureCallsCount = calls.filter((c) => c.outcome === "failure").length;
+  const successRate = totalCalls > 0 ? (successCallsCount / totalCalls) * 100 : 0;
+
+  const callsWithLatency = calls.filter((c) => {
+    const agg = c.aggregates[0]?.features as any;
+    return agg?.avg_resolution_latency !== null && agg?.avg_resolution_latency !== undefined;
+  });
+  const avgResolutionLatency =
+    callsWithLatency.length > 0
+      ? callsWithLatency.reduce((sum, c) => {
+          const agg = c.aggregates[0].features as any;
+          return sum + agg.avg_resolution_latency;
+        }, 0) / callsWithLatency.length
+      : null;
+
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  const callsThisWeek = calls.filter((c) => new Date(c.createdAt) >= oneWeekAgo).length;
+
+  const callsByDate: Record<string, { success: number; failure: number }> = {};
+  calls.forEach((call) => {
+    const date = new Date(call.createdAt).toISOString().split("T")[0];
+    if (!callsByDate[date]) {
+      callsByDate[date] = { success: 0, failure: 0 };
+    }
+    if (call.outcome === "success") {
+      callsByDate[date].success++;
+    } else {
+      callsByDate[date].failure++;
+    }
+  });
+
+  const markerCounts: Record<string, number> = {};
+  calls.forEach((call) => {
+    call.signals.forEach((signal: any) => {
+      markerCounts[signal.signalType] = (markerCounts[signal.signalType] || 0) + 1;
+    });
+  });
 
   // Fetch comparison data server-side
   // Get only aggregate features for successful calls
@@ -126,19 +186,43 @@ export default async function ComparePage() {
     <div className="min-h-[calc(100vh-73px)] bg-white">
       <div className="mx-auto max-w-7xl px-6 py-12">
         {/* Header */}
-        <div className="mb-8 flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">
-              Outcome Comparison
-            </h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Statistical comparison of success vs. failure calls
-            </p>
-          </div>
-          <GeneratePlaybookButton hasData={hasSuccessData} />
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground">
+            Insights
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Performance trends and outcome patterns from your calls
+          </p>
         </div>
 
-        {/* Stats */}
+        {/* Key Metrics */}
+        <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatsCard title="Total Calls" value={totalCalls.toString()} />
+          <StatsCard title="Success Rate" value={`${successRate.toFixed(1)}%`} />
+          <StatsCard title="Calls This Week" value={callsThisWeek.toString()} />
+          <StatsCard
+            title="Avg Resolution Latency"
+            value={avgResolutionLatency !== null ? `${avgResolutionLatency.toFixed(1)}s` : "—"}
+          />
+        </div>
+
+        {/* Trends */}
+        <div className="mb-10 grid gap-6 lg:grid-cols-2">
+          <CallVolumeChart data={callsByDate} />
+          <MarkerDistribution data={markerCounts} />
+        </div>
+
+        {/* Outcome Comparison */}
+        <div className="mb-4">
+          <h2 className="text-2xl font-semibold text-foreground">
+            Outcome Comparison
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Statistical comparison of success vs. failure calls
+          </p>
+        </div>
+
+        {/* Comparison Stats */}
         <div className="mb-8 grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border border bg-white p-6">
             <div className="text-sm text-muted-foreground">
