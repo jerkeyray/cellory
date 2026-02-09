@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import CallListItem from "./CallListItem";
 
 interface Call {
   id: string;
@@ -27,49 +28,6 @@ interface CallsListClientProps {
 }
 
 type FilterTab = "all" | "success" | "failure";
-
-function getStatusBadge(status: string) {
-  const styles = {
-    pending: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-    extracting: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-    aggregating:
-      "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-    complete: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-    error: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  };
-
-  return (
-    <span
-      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-        styles[status as keyof typeof styles] || ""
-      }`}
-    >
-      {status}
-    </span>
-  );
-}
-
-function getOutcomeBadge(outcome: string) {
-  return outcome === "success" ? (
-    <span className="inline-flex items-center gap-1 text-sm font-medium text-green-600 dark:text-green-400">
-      Success
-    </span>
-  ) : (
-    <span className="inline-flex items-center gap-1 text-sm font-medium text-red-600 dark:text-red-400">
-      Failure
-    </span>
-  );
-}
-
-function formatDate(date: Date) {
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export default function CallsListClient({ calls, stats }: CallsListClientProps) {
   const [filteredCalls, setFilteredCalls] = useState<Call[]>(calls);
@@ -178,38 +136,7 @@ export default function CallsListClient({ calls, stats }: CallsListClientProps) 
       ) : (
         <div className="grid gap-4">
           {filteredCalls.map((call) => (
-            <Link
-              key={call.id}
-              href={`/calls/${call.id}`}
-              className="group rounded-xl border border-[#e5e5e5] bg-white p-6 transition-all hover:border-[#ff6b35] hover:shadow-md dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:hover:border-[#ff6b35]"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    {getOutcomeBadge(call.outcome)}
-                    {getStatusBadge(call.status)}
-                  </div>
-                  <h3 className="mt-2 text-lg font-semibold text-[#1a1a1a] dark:text-white">
-                    {call.transcript.filename}
-                  </h3>
-                  <div className="mt-2 flex items-center gap-4 text-sm text-[#666] dark:text-[#999]">
-                    <span>Signals: {call._count.signals}</span>
-                    {call.transcript.durationSeconds && (
-                      <span>
-                        Duration:{" "}
-                        {Math.floor(call.transcript.durationSeconds / 60)}:
-                        {(call.transcript.durationSeconds % 60)
-                          .toString()
-                          .padStart(2, "0")}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="text-right text-sm text-[#999]">
-                  {formatDate(call.createdAt)}
-                </div>
-              </div>
-            </Link>
+            <CallListItem key={call.id} call={call} />
           ))}
         </div>
       )}

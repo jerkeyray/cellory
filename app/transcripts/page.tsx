@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { prisma } from "@/app/lib/prisma";
 import TranscriptUploadForm from "./TranscriptUploadForm";
+import TranscriptListItem from "./TranscriptListItem";
 
 interface Transcript {
   id: string;
@@ -103,34 +103,13 @@ export default async function TranscriptsPage() {
         ) : (
           <div className="grid gap-4">
             {transcripts.map((transcript) => (
-              <Link
+              <TranscriptListItem
                 key={transcript.id}
-                href={`/transcripts/${transcript.id}`}
-                className="group rounded-xl border border-[#e5e5e5] bg-white p-6 transition-all hover:border-[#ff6b35] hover:shadow-md dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:hover:border-[#ff6b35]"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-[#1a1a1a] dark:text-white">
-                      {transcript.filename}
-                    </h3>
-                    <div className="mt-2 flex items-center gap-4 text-sm text-[#666] dark:text-[#999]">
-                      <span>{getStatusBadge(transcript.status)}</span>
-                      {transcript.durationSeconds && (
-                        <span>
-                          Duration: {formatDuration(transcript.durationSeconds)}
-                        </span>
-                      )}
-                      {transcript.language && (
-                        <span>Language: {transcript.language.toUpperCase()}</span>
-                      )}
-                      <span>Calls: {transcript._count.calls}</span>
-                    </div>
-                  </div>
-                  <div className="text-right text-sm text-[#999]">
-                    {formatDate(transcript.createdAt)}
-                  </div>
-                </div>
-              </Link>
+                transcript={transcript}
+                formatDuration={formatDuration}
+                formatDate={formatDate}
+                getStatusBadge={getStatusBadge}
+              />
             ))}
           </div>
         )}

@@ -60,3 +60,49 @@ export async function GET(
     );
   }
 }
+
+/**
+ * DELETE /api/calls/[id]
+ * Delete a call and its associated signals and aggregates
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // Check authentication
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+
+    // Check if call exists
+    const call = await prisma.call.findUnique({
+      where: { id },
+    });
+
+    if (!call) {
+      return NextResponse.json(
+        { error: "Call not found" },
+        { status: 404 }
+      );
+    }
+
+    // Delete call (cascades to signals and aggregates)
+    await prisma.call.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({
+      message: "Call deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting call:", error);
+    return NextResponse.json(
+      { error: "Failed to delete call" },
+      { status: 500 }
+    );
+  }
+}
