@@ -113,32 +113,32 @@ export default function CallsListClient({ calls, stats }: CallsListClientProps) 
     <>
       {/* Stats */}
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-[#e5e5e5] bg-white p-4 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-          <div className="text-2xl font-bold text-[#1a1a1a] dark:text-white">
+        <div className="rounded-xl border border bg-white p-4">
+          <div className="text-2xl font-bold text-foreground">
             {stats.total}
           </div>
-          <div className="text-sm text-[#666] dark:text-[#999]">Total Calls</div>
+          <div className="text-sm text-muted-foreground">Total Calls</div>
         </div>
-        <div className="rounded-xl border border-[#e5e5e5] bg-white p-4 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-          <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+        <div className="rounded-xl border border bg-white p-4">
+          <div className="text-2xl font-bold text-green-600">
             {stats.success}
           </div>
-          <div className="text-sm text-[#666] dark:text-[#999]">Successful</div>
+          <div className="text-sm text-muted-foreground">Successful</div>
         </div>
-        <div className="rounded-xl border border-[#e5e5e5] bg-white p-4 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-          <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+        <div className="rounded-xl border border bg-white p-4">
+          <div className="text-2xl font-bold text-red-600">
             {stats.failure}
           </div>
-          <div className="text-sm text-[#666] dark:text-[#999]">Failed</div>
+          <div className="text-sm text-muted-foreground">Failed</div>
         </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="mb-6 rounded-xl border border-[#e5e5e5] bg-white p-4 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
+      <div className="mb-6 rounded-xl border border bg-white p-4">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {/* Search */}
           <div>
-            <label className="mb-1 block text-xs text-[#666] dark:text-[#999]">
+            <label className="mb-1 block text-xs text-muted-foreground">
               Search
             </label>
             <input
@@ -146,19 +146,19 @@ export default function CallsListClient({ calls, stats }: CallsListClientProps) 
               placeholder="Search by filename..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-2 text-sm text-[#1a1a1a] placeholder-[#999] focus:border-[#ff6b35] focus:outline-none dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:text-white"
+              className="w-full rounded-lg border border bg-white px-3 py-2 text-sm text-foreground placeholder-[#999] focus:border-[#ff6b35] focus:outline-none"
             />
           </div>
 
           {/* Status Filter */}
           <div>
-            <label className="mb-1 block text-xs text-[#666] dark:text-[#999]">
+            <label className="mb-1 block text-xs text-muted-foreground">
               Status
             </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-              className="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#ff6b35] focus:outline-none dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:text-white"
+              className="w-full rounded-lg border border bg-white px-3 py-2 text-sm text-foreground focus:border-[#ff6b35] focus:outline-none"
             >
               <option value="all">All Statuses</option>
               <option value="complete">Complete</option>
@@ -169,13 +169,13 @@ export default function CallsListClient({ calls, stats }: CallsListClientProps) 
 
           {/* Sort */}
           <div>
-            <label className="mb-1 block text-xs text-[#666] dark:text-[#999]">
+            <label className="mb-1 block text-xs text-muted-foreground">
               Sort By
             </label>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortBy)}
-              className="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#ff6b35] focus:outline-none dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:text-white"
+              className="w-full rounded-lg border border bg-white px-3 py-2 text-sm text-foreground focus:border-[#ff6b35] focus:outline-none"
             >
               <option value="date-desc">Newest First</option>
               <option value="date-asc">Oldest First</option>
@@ -186,7 +186,7 @@ export default function CallsListClient({ calls, stats }: CallsListClientProps) 
 
           {/* Date Range */}
           <div>
-            <label className="mb-1 block text-xs text-[#666] dark:text-[#999]">
+            <label className="mb-1 block text-xs text-muted-foreground">
               Date Range
             </label>
             <div className="flex gap-2">
@@ -194,13 +194,13 @@ export default function CallsListClient({ calls, stats }: CallsListClientProps) 
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full rounded-lg border border-[#e5e5e5] bg-white px-2 py-2 text-xs text-[#1a1a1a] focus:border-[#ff6b35] focus:outline-none dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:text-white"
+                className="w-full rounded-lg border border bg-white px-2 py-2 text-xs text-foreground focus:border-[#ff6b35] focus:outline-none"
               />
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full rounded-lg border border-[#e5e5e5] bg-white px-2 py-2 text-xs text-[#1a1a1a] focus:border-[#ff6b35] focus:outline-none dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:text-white"
+                className="w-full rounded-lg border border bg-white px-2 py-2 text-xs text-foreground focus:border-[#ff6b35] focus:outline-none"
               />
             </div>
           </div>
@@ -209,25 +209,25 @@ export default function CallsListClient({ calls, stats }: CallsListClientProps) 
         {/* Active Filters Summary */}
         {(searchQuery || statusFilter !== "all" || startDate || endDate) && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="text-xs text-[#666] dark:text-[#999]">
+            <span className="text-xs text-muted-foreground">
               Active filters:
             </span>
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="flex items-center gap-1 rounded-full bg-[#f5f5f5] px-2 py-1 text-xs text-[#1a1a1a] hover:bg-[#e5e5e5] dark:bg-[#1a1a1a] dark:text-white dark:hover:bg-[#2a2a2a]"
+                className="flex items-center gap-1 rounded-full bg-[#f5f5f5] px-2 py-1 text-xs text-foreground hover:bg-[#e5e5e5]"
               >
                 Search: "{searchQuery}"
-                <span className="text-[#999]">×</span>
+                <span className="text-muted-foreground">×</span>
               </button>
             )}
             {statusFilter !== "all" && (
               <button
                 onClick={() => setStatusFilter("all")}
-                className="flex items-center gap-1 rounded-full bg-[#f5f5f5] px-2 py-1 text-xs text-[#1a1a1a] hover:bg-[#e5e5e5] dark:bg-[#1a1a1a] dark:text-white dark:hover:bg-[#2a2a2a]"
+                className="flex items-center gap-1 rounded-full bg-[#f5f5f5] px-2 py-1 text-xs text-foreground hover:bg-[#e5e5e5]"
               >
                 Status: {statusFilter}
-                <span className="text-[#999]">×</span>
+                <span className="text-muted-foreground">×</span>
               </button>
             )}
             {(startDate || endDate) && (
@@ -236,10 +236,10 @@ export default function CallsListClient({ calls, stats }: CallsListClientProps) 
                   setStartDate("");
                   setEndDate("");
                 }}
-                className="flex items-center gap-1 rounded-full bg-[#f5f5f5] px-2 py-1 text-xs text-[#1a1a1a] hover:bg-[#e5e5e5] dark:bg-[#1a1a1a] dark:text-white dark:hover:bg-[#2a2a2a]"
+                className="flex items-center gap-1 rounded-full bg-[#f5f5f5] px-2 py-1 text-xs text-foreground hover:bg-[#e5e5e5]"
               >
                 Date: {startDate || "..."} to {endDate || "..."}
-                <span className="text-[#999]">×</span>
+                <span className="text-muted-foreground">×</span>
               </button>
             )}
           </div>
@@ -247,13 +247,13 @@ export default function CallsListClient({ calls, stats }: CallsListClientProps) 
       </div>
 
       {/* Filter Tabs */}
-      <div className="mb-6 flex gap-2 border-b border-[#e5e5e5] dark:border-[#2a2a2a]">
+      <div className="mb-6 flex gap-2 border-b border">
         <button
           onClick={() => setActiveFilter("all")}
           className={`px-4 py-2 text-sm font-medium transition-colors ${
             activeFilter === "all"
               ? "border-b-2 border-[#ff6b35] text-[#ff6b35]"
-              : "text-[#666] hover:text-[#1a1a1a] dark:text-[#999] dark:hover:text-white"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           All ({stats.total})
@@ -263,7 +263,7 @@ export default function CallsListClient({ calls, stats }: CallsListClientProps) 
           className={`px-4 py-2 text-sm font-medium transition-colors ${
             activeFilter === "success"
               ? "border-b-2 border-[#ff6b35] text-[#ff6b35]"
-              : "text-[#666] hover:text-[#1a1a1a] dark:text-[#999] dark:hover:text-white"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           Success ({stats.success})
@@ -273,7 +273,7 @@ export default function CallsListClient({ calls, stats }: CallsListClientProps) 
           className={`px-4 py-2 text-sm font-medium transition-colors ${
             activeFilter === "failure"
               ? "border-b-2 border-[#ff6b35] text-[#ff6b35]"
-              : "text-[#666] hover:text-[#1a1a1a] dark:text-[#999] dark:hover:text-white"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           Failure ({stats.failure})
@@ -282,13 +282,13 @@ export default function CallsListClient({ calls, stats }: CallsListClientProps) 
 
       {/* Results Count & Export */}
       <div className="mb-4 flex items-center justify-between">
-        <div className="text-sm text-[#666] dark:text-[#999]">
+        <div className="text-sm text-muted-foreground">
           Showing {filteredCalls.length} of {calls.length} calls
         </div>
         {filteredCalls.length > 0 && (
           <button
             onClick={handleExport}
-            className="flex items-center gap-2 rounded-lg border border-[#e5e5e5] px-3 py-1.5 text-sm font-medium text-[#666] transition-colors hover:bg-[#f5f5f5] dark:border-[#2a2a2a] dark:text-[#999] dark:hover:bg-[#1a1a1a]"
+            className="flex items-center gap-2 rounded-lg border border px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-[#f5f5f5]"
           >
             <svg
               className="h-4 w-4"
@@ -310,9 +310,9 @@ export default function CallsListClient({ calls, stats }: CallsListClientProps) 
 
       {/* Calls List */}
       {filteredCalls.length === 0 ? (
-        <div className="rounded-2xl border border-[#e5e5e5] bg-white p-12 text-center dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
+        <div className="rounded-2xl border border bg-white p-12 text-center">
           <svg
-            className="mx-auto h-12 w-12 text-[#999]"
+            className="mx-auto h-12 w-12 text-muted-foreground"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -324,10 +324,10 @@ export default function CallsListClient({ calls, stats }: CallsListClientProps) 
               d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
             />
           </svg>
-          <h3 className="mt-4 text-lg font-medium text-[#1a1a1a] dark:text-white">
+          <h3 className="mt-4 text-lg font-medium text-foreground">
             No calls yet
           </h3>
-          <p className="mt-2 text-sm text-[#666] dark:text-[#999]">
+          <p className="mt-2 text-sm text-muted-foreground">
             {activeFilter === "all"
               ? "Start analyzing calls to see behavioral signals"
               : `No ${activeFilter} calls found`}

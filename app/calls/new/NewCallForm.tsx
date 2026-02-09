@@ -94,7 +94,7 @@ export default function NewCallForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {error}
         </div>
       )}
@@ -103,7 +103,7 @@ export default function NewCallForm() {
       <div>
         <label
           htmlFor="transcript"
-          className="block text-sm font-medium text-[#1a1a1a] dark:text-white"
+          className="block text-sm font-medium text-foreground"
         >
           Select Transcript
         </label>
@@ -112,7 +112,7 @@ export default function NewCallForm() {
           value={selectedTranscriptId}
           onChange={(e) => setSelectedTranscriptId(e.target.value)}
           required
-          className="mt-2 block w-full rounded-lg border border-[#e5e5e5] bg-white px-4 py-2.5 text-sm text-[#1a1a1a] focus:border-[#ff6b35] focus:outline-none focus:ring-1 focus:ring-[#ff6b35] dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:text-white"
+          className="mt-2 block w-full rounded-lg border border bg-white px-4 py-2.5 text-sm text-foreground focus:border-[#ff6b35] focus:outline-none focus:ring-1 focus:ring-[#ff6b35]"
         >
           <option value="">Choose a transcript...</option>
           {transcripts.map((t) => (
@@ -122,7 +122,7 @@ export default function NewCallForm() {
           ))}
         </select>
         {transcripts.length === 0 && (
-          <p className="mt-2 text-sm text-[#666] dark:text-[#999]">
+          <p className="mt-2 text-sm text-muted-foreground">
             No ready transcripts available. Upload audio first.
           </p>
         )}

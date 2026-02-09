@@ -27,12 +27,12 @@ interface CallListItemProps {
 
 function getStatusBadge(status: string) {
   const styles = {
-    pending: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-    extracting: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    pending: "bg-gray-100 text-gray-800",
+    extracting: "bg-blue-100 text-blue-800",
     aggregating:
-      "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-    complete: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-    error: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+      "bg-purple-100 text-purple-800",
+    complete: "bg-green-100 text-green-800",
+    error: "bg-red-100 text-red-800",
   };
 
   return (
@@ -48,11 +48,11 @@ function getStatusBadge(status: string) {
 
 function getOutcomeBadge(outcome: string) {
   return outcome === "success" ? (
-    <span className="inline-flex items-center gap-1 text-sm font-medium text-green-600 dark:text-green-400">
+    <span className="inline-flex items-center gap-1 text-sm font-medium text-green-600">
       Success
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 text-sm font-medium text-red-600 dark:text-red-400">
+    <span className="inline-flex items-center gap-1 text-sm font-medium text-red-600">
       Failure
     </span>
   );
@@ -112,7 +112,7 @@ export default function CallListItem({ call }: CallListItemProps) {
 
   return (
     <>
-      <div className="group relative rounded-xl border border-[#e5e5e5] bg-white p-6 transition-all hover:border-[#ff6b35] hover:shadow-md dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:hover:border-[#ff6b35]">
+      <div className="group relative rounded-xl border border bg-white p-6 transition-all hover:border-[#ff6b35] hover:shadow-md">
         <Link href={`/calls/${call.id}`} className="block">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -120,10 +120,10 @@ export default function CallListItem({ call }: CallListItemProps) {
                 {getOutcomeBadge(call.outcome)}
                 {getStatusBadge(call.status)}
               </div>
-              <h3 className="mt-2 text-lg font-semibold text-[#1a1a1a] dark:text-white">
+              <h3 className="mt-2 text-lg font-semibold text-foreground">
                 {call.transcript.filename}
               </h3>
-              <div className="mt-2 flex items-center gap-4 text-sm text-[#666] dark:text-[#999]">
+              <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
                 <span>Signals: {call._count.signals}</span>
                 {call.transcript.durationSeconds && (
                   <span>
@@ -151,12 +151,12 @@ export default function CallListItem({ call }: CallListItemProps) {
               )}
             </div>
             <div className="flex items-center gap-4">
-              <div className="text-right text-sm text-[#999]">
+              <div className="text-right text-sm text-muted-foreground">
                 {formatDate(call.createdAt)}
               </div>
               <button
                 onClick={handleDelete}
-                className="opacity-0 transition-opacity group-hover:opacity-100 rounded-lg p-2 text-[#666] hover:bg-red-50 hover:text-red-600 dark:text-[#999] dark:hover:bg-red-950 dark:hover:text-red-400"
+                className="opacity-0 transition-opacity group-hover:opacity-100 rounded-lg p-2 text-muted-foreground hover:bg-red-50 hover:text-red-600"
                 title="Delete call"
               >
                 <svg
@@ -185,23 +185,23 @@ export default function CallListItem({ call }: CallListItemProps) {
           onClick={cancelDelete}
         >
           <div
-            className="mx-4 w-full max-w-md rounded-xl border border-[#e5e5e5] bg-white p-6 shadow-xl dark:border-[#2a2a2a] dark:bg-[#0a0a0a]"
+            className="mx-4 w-full max-w-md rounded-xl border border bg-white p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-xl font-bold text-[#1a1a1a] dark:text-white">
+            <h3 className="text-xl font-bold text-foreground">
               Delete Call Analysis
             </h3>
-            <p className="mt-2 text-sm text-[#666] dark:text-[#999]">
+            <p className="mt-2 text-sm text-muted-foreground">
               Are you sure you want to delete the call analysis for{" "}
               <strong>{call.transcript.filename}</strong>?
-              <span className="mt-2 block text-red-600 dark:text-red-400">
+              <span className="mt-2 block text-red-600">
                 This will also delete {call._count.signals} signal
                 {call._count.signals === 1 ? "" : "s"} and all aggregates.
               </span>
             </p>
 
             {error && (
-              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                 {error}
               </div>
             )}
@@ -210,7 +210,7 @@ export default function CallListItem({ call }: CallListItemProps) {
               <button
                 onClick={cancelDelete}
                 disabled={deleting}
-                className="flex-1 rounded-lg border border-[#e5e5e5] px-4 py-2.5 text-sm font-medium text-[#1a1a1a] transition-colors hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#2a2a2a] dark:text-white dark:hover:bg-[#1a1a1a]"
+                className="flex-1 rounded-lg border border px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>

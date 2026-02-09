@@ -101,14 +101,14 @@ export default async function AnalyticsPage() {
   const successRateTrend = successRatePrevWeek > 0 ? successRateThisWeek - successRatePrevWeek : 0;
 
   return (
-    <div className="min-h-[calc(100vh-73px)] bg-white dark:bg-[#0a0a0a]">
+    <div className="min-h-[calc(100vh-73px)] bg-white">
       <div className="mx-auto max-w-7xl px-6 py-12">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#1a1a1a] dark:text-white">
+          <h1 className="text-3xl font-bold text-foreground">
             Analytics Dashboard
           </h1>
-          <p className="mt-2 text-sm text-[#666] dark:text-[#999]">
+          <p className="mt-2 text-sm text-muted-foreground">
             Trends, patterns, and insights from your call analyses
           </p>
         </div>
@@ -156,18 +156,18 @@ export default async function AnalyticsPage() {
         {/* Top Insights */}
         <div className="grid gap-6 md:grid-cols-2">
           {/* Performance Insights */}
-          <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-            <h2 className="mb-4 text-lg font-semibold text-[#1a1a1a] dark:text-white">
+          <div className="rounded-xl border border bg-white p-6">
+            <h2 className="mb-4 text-lg font-semibold text-foreground">
               Performance Insights
             </h2>
             <div className="space-y-3 text-sm">
               <div className="flex items-start gap-3">
                 <span className="text-lg">📊</span>
                 <div>
-                  <p className="font-medium text-[#1a1a1a] dark:text-white">
+                  <p className="font-medium text-foreground">
                     Success Rate: {successRate.toFixed(1)}%
                   </p>
-                  <p className="text-[#666] dark:text-[#999]">
+                  <p className="text-muted-foreground">
                     {successCalls} successful out of {totalCalls} total calls
                   </p>
                 </div>
@@ -176,10 +176,10 @@ export default async function AnalyticsPage() {
                 <div className="flex items-start gap-3">
                   <span className="text-lg">⚡</span>
                   <div>
-                    <p className="font-medium text-[#1a1a1a] dark:text-white">
+                    <p className="font-medium text-foreground">
                       Average Resolution: {avgResolutionLatency.toFixed(1)}s
                     </p>
-                    <p className="text-[#666] dark:text-[#999]">
+                    <p className="text-muted-foreground">
                       Based on {callsWithLatency.length} calls with resolution data
                     </p>
                   </div>
@@ -188,10 +188,10 @@ export default async function AnalyticsPage() {
               <div className="flex items-start gap-3">
                 <span className="text-lg">📈</span>
                 <div>
-                  <p className="font-medium text-[#1a1a1a] dark:text-white">
+                  <p className="font-medium text-foreground">
                     Weekly Activity: {callsThisWeek} calls
                   </p>
-                  <p className="text-[#666] dark:text-[#999]">
+                  <p className="text-muted-foreground">
                     {volumeTrend > 0 ? "+" : ""}
                     {volumeTrend.toFixed(0)}% vs previous week
                   </p>
@@ -201,41 +201,41 @@ export default async function AnalyticsPage() {
           </div>
 
           {/* Quick Actions */}
-          <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-            <h2 className="mb-4 text-lg font-semibold text-[#1a1a1a] dark:text-white">
+          <div className="rounded-xl border border bg-white p-6">
+            <h2 className="mb-4 text-lg font-semibold text-foreground">
               Quick Actions
             </h2>
             <div className="space-y-3">
               <a
                 href="/compare"
-                className="block rounded-lg border border-[#e5e5e5] p-3 text-sm transition-colors hover:border-[#ff6b35] hover:bg-[#fff5f2] dark:border-[#2a2a2a] dark:hover:border-[#ff6b35] dark:hover:bg-[#1a0f0a]"
+                className="block rounded-lg border border p-3 text-sm transition-colors hover:border-[#ff6b35] hover:bg-[#fff5f2]"
               >
-                <p className="font-medium text-[#1a1a1a] dark:text-white">
+                <p className="font-medium text-foreground">
                   Compare Outcomes
                 </p>
-                <p className="mt-1 text-xs text-[#666] dark:text-[#999]">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Analyze success vs failure patterns
                 </p>
               </a>
               <a
                 href="/calls"
-                className="block rounded-lg border border-[#e5e5e5] p-3 text-sm transition-colors hover:border-[#ff6b35] hover:bg-[#fff5f2] dark:border-[#2a2a2a] dark:hover:border-[#ff6b35] dark:hover:bg-[#1a0f0a]"
+                className="block rounded-lg border border p-3 text-sm transition-colors hover:border-[#ff6b35] hover:bg-[#fff5f2]"
               >
-                <p className="font-medium text-[#1a1a1a] dark:text-white">
+                <p className="font-medium text-foreground">
                   View All Calls
                 </p>
-                <p className="mt-1 text-xs text-[#666] dark:text-[#999]">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Search, filter, and manage calls
                 </p>
               </a>
               <a
                 href="/calls/new"
-                className="block rounded-lg border border-[#e5e5e5] p-3 text-sm transition-colors hover:border-[#ff6b35] hover:bg-[#fff5f2] dark:border-[#2a2a2a] dark:hover:border-[#ff6b35] dark:hover:bg-[#1a0f0a]"
+                className="block rounded-lg border border p-3 text-sm transition-colors hover:border-[#ff6b35] hover:bg-[#fff5f2]"
               >
-                <p className="font-medium text-[#1a1a1a] dark:text-white">
+                <p className="font-medium text-foreground">
                   Analyze New Call
                 </p>
-                <p className="mt-1 text-xs text-[#666] dark:text-[#999]">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Upload a transcript to get started
                 </p>
               </a>

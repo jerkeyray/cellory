@@ -23,13 +23,13 @@ export default function MarkerDistribution({ data }: MarkerDistributionProps) {
   };
 
   return (
-    <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-      <h2 className="mb-6 text-lg font-semibold text-[#1a1a1a] dark:text-white">
+    <div className="rounded-xl border border bg-white p-6">
+      <h2 className="mb-6 text-lg font-semibold text-foreground">
         Marker Distribution (Top 10)
       </h2>
 
       {sortedMarkers.length === 0 ? (
-        <p className="text-sm text-[#666] dark:text-[#999]">
+        <p className="text-sm text-muted-foreground">
           No markers detected yet
         </p>
       ) : (
@@ -42,19 +42,19 @@ export default function MarkerDistribution({ data }: MarkerDistributionProps) {
             return (
               <div key={type}>
                 <div className="mb-2 flex items-center justify-between text-sm">
-                  <span className="font-medium text-[#1a1a1a] dark:text-white">
+                  <span className="font-medium text-foreground">
                     {type.replace(/_/g, " ")}
                   </span>
                   <div className="flex items-center gap-3">
-                    <span className="text-[#666] dark:text-[#999]">
+                    <span className="text-muted-foreground">
                       {percentage.toFixed(1)}%
                     </span>
-                    <span className="font-medium text-[#1a1a1a] dark:text-white">
+                    <span className="font-medium text-foreground">
                       {count}
                     </span>
                   </div>
                 </div>
-                <div className="h-6 w-full rounded-full bg-[#f5f5f5] dark:bg-[#1a1a1a]">
+                <div className="h-6 w-full rounded-full bg-[#f5f5f5]">
                   <div
                     className="h-6 rounded-full transition-all"
                     style={{
@@ -71,20 +71,20 @@ export default function MarkerDistribution({ data }: MarkerDistributionProps) {
 
       {/* Summary */}
       {sortedMarkers.length > 0 && (
-        <div className="mt-6 rounded-lg border border-[#e5e5e5] bg-[#f5f5f5] p-4 text-sm dark:border-[#2a2a2a] dark:bg-[#1a1a1a]">
+        <div className="mt-6 rounded-lg border border bg-[#f5f5f5] p-4 text-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[#666] dark:text-[#999]">
+            <span className="text-muted-foreground">
               Total Markers
             </span>
-            <span className="font-medium text-[#1a1a1a] dark:text-white">
+            <span className="font-medium text-foreground">
               {totalMarkers}
             </span>
           </div>
           <div className="mt-2 flex items-center justify-between">
-            <span className="text-[#666] dark:text-[#999]">
+            <span className="text-muted-foreground">
               Unique Types
             </span>
-            <span className="font-medium text-[#1a1a1a] dark:text-white">
+            <span className="font-medium text-foreground">
               {Object.keys(data).length}
             </span>
           </div>

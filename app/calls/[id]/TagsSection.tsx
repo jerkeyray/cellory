@@ -80,9 +80,9 @@ export default function TagsSection({ callId }: TagsSectionProps) {
   };
 
   return (
-    <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
+    <div className="rounded-xl border border bg-white p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-[#1a1a1a] dark:text-white">
+        <h3 className="text-lg font-semibold text-foreground">
           Tags
         </h3>
         {!showInput && (
@@ -104,7 +104,7 @@ export default function TagsSection({ callId }: TagsSectionProps) {
               value={newTagName}
               onChange={(e) => setNewTagName(e.target.value)}
               placeholder="Tag name..."
-              className="flex-1 rounded-lg border border-[#e5e5e5] bg-white px-3 py-2 text-sm text-[#1a1a1a] placeholder-[#999] focus:border-[#ff6b35] focus:outline-none dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:text-white"
+              className="flex-1 rounded-lg border border bg-white px-3 py-2 text-sm text-foreground placeholder-[#999] focus:border-[#ff6b35] focus:outline-none"
               autoFocus
             />
             <button
@@ -120,7 +120,7 @@ export default function TagsSection({ callId }: TagsSectionProps) {
                 setShowInput(false);
                 setNewTagName("");
               }}
-              className="rounded-lg border border-[#e5e5e5] px-4 py-2 text-sm font-medium text-[#666] transition-colors hover:bg-[#f5f5f5] dark:border-[#2a2a2a] dark:text-[#999] dark:hover:bg-[#1a1a1a]"
+              className="rounded-lg border border px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-[#f5f5f5]"
             >
               Cancel
             </button>
@@ -130,7 +130,7 @@ export default function TagsSection({ callId }: TagsSectionProps) {
 
       {/* Tags List */}
       {tags.length === 0 ? (
-        <p className="text-sm text-[#666] dark:text-[#999]">
+        <p className="text-sm text-muted-foreground">
           No tags yet. Add tags to organize and categorize this call.
         </p>
       ) : (

@@ -16,13 +16,13 @@ export default function CallVolumeChart({ data }: CallVolumeChartProps) {
   );
 
   return (
-    <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-      <h2 className="mb-6 text-lg font-semibold text-[#1a1a1a] dark:text-white">
+    <div className="rounded-xl border border bg-white p-6">
+      <h2 className="mb-6 text-lg font-semibold text-foreground">
         Call Volume (Last 30 Days)
       </h2>
 
       {last30Days.length === 0 ? (
-        <p className="text-sm text-[#666] dark:text-[#999]">
+        <p className="text-sm text-muted-foreground">
           No data available
         </p>
       ) : (
@@ -40,21 +40,21 @@ export default function CallVolumeChart({ data }: CallVolumeChartProps) {
                   className="group relative flex flex-1 flex-col justify-end"
                 >
                   {/* Tooltip */}
-                  <div className="absolute bottom-full left-1/2 mb-2 hidden -translate-x-1/2 rounded-lg border border-[#e5e5e5] bg-white px-3 py-2 text-xs shadow-lg group-hover:block dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-                    <div className="font-medium text-[#1a1a1a] dark:text-white">
+                  <div className="absolute bottom-full left-1/2 mb-2 hidden -translate-x-1/2 rounded-lg border border bg-white px-3 py-2 text-xs shadow-lg group-hover:block">
+                    <div className="font-medium text-foreground">
                       {new Date(date).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
                       })}
                     </div>
-                    <div className="mt-1 text-[#666] dark:text-[#999]">
-                      <div className="text-green-600 dark:text-green-400">
+                    <div className="mt-1 text-muted-foreground">
+                      <div className="text-green-600">
                         Success: {data[date].success}
                       </div>
-                      <div className="text-red-600 dark:text-red-400">
+                      <div className="text-red-600">
                         Failure: {data[date].failure}
                       </div>
-                      <div className="mt-1 border-t border-[#e5e5e5] pt-1 dark:border-[#2a2a2a]">
+                      <div className="mt-1 border-t border pt-1">
                         Total: {total}
                       </div>
                     </div>
@@ -64,13 +64,13 @@ export default function CallVolumeChart({ data }: CallVolumeChartProps) {
                   <div className="flex flex-col gap-px">
                     {data[date].failure > 0 && (
                       <div
-                        className="w-full rounded-t bg-red-500 transition-all hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-500"
+                        className="w-full rounded-t bg-red-500 transition-all hover:bg-red-600"
                         style={{ height: `${failureHeight}%` }}
                       />
                     )}
                     {data[date].success > 0 && (
                       <div
-                        className={`w-full bg-green-500 transition-all hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-500 ${
+                        className={`w-full bg-green-500 transition-all hover:bg-green-600 ${
                           data[date].failure === 0 ? "rounded-t" : ""
                         }`}
                         style={{ height: `${successHeight}%` }}
@@ -85,12 +85,12 @@ export default function CallVolumeChart({ data }: CallVolumeChartProps) {
           {/* Legend */}
           <div className="flex items-center justify-center gap-6 text-xs">
             <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-green-500 dark:bg-green-600" />
-              <span className="text-[#666] dark:text-[#999]">Success</span>
+              <div className="h-3 w-3 rounded bg-green-500" />
+              <span className="text-muted-foreground">Success</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-red-500 dark:bg-red-600" />
-              <span className="text-[#666] dark:text-[#999]">Failure</span>
+              <div className="h-3 w-3 rounded bg-red-500" />
+              <span className="text-muted-foreground">Failure</span>
             </div>
           </div>
         </>

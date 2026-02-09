@@ -36,13 +36,13 @@ export default async function PlaybookDetailPage({ params }: PlaybookDetailPageP
   const confidenceScores = playbook.confidenceScores as any;
 
   return (
-    <div className="min-h-[calc(100vh-73px)] bg-white dark:bg-[#0a0a0a]">
+    <div className="min-h-[calc(100vh-73px)] bg-white">
       <div className="mx-auto max-w-5xl px-6 py-12">
         {/* Header */}
         <div className="mb-8">
           <Link
             href="/playbooks"
-            className="inline-flex items-center text-sm text-[#666] hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-[#ff6b35]"
           >
             <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -52,10 +52,10 @@ export default async function PlaybookDetailPage({ params }: PlaybookDetailPageP
 
           <div className="mt-4 flex items-start justify-between">
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-[#1a1a1a] dark:text-white">
+              <h1 className="text-3xl font-bold text-foreground">
                 {playbook.title}
               </h1>
-              <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-[#666] dark:text-[#999]">
+              <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <svg
                     className="h-4 w-4"
@@ -97,40 +97,40 @@ export default async function PlaybookDetailPage({ params }: PlaybookDetailPageP
         {/* Confidence Scores */}
         {confidenceScores && (
           <div className="mb-8 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-[#e5e5e5] bg-white p-4 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-              <div className="text-xs text-[#666] dark:text-[#999]">
+            <div className="rounded-xl border border bg-white p-4">
+              <div className="text-xs text-muted-foreground">
                 Data Quality
               </div>
               <div className="mt-2 flex items-center gap-3">
                 <div className="flex-1">
-                  <div className="h-2 w-full rounded-full bg-[#f5f5f5] dark:bg-[#1a1a1a]">
+                  <div className="h-2 w-full rounded-full bg-[#f5f5f5]">
                     <div
-                      className="h-2 rounded-full bg-green-500 dark:bg-green-600"
+                      className="h-2 rounded-full bg-green-500"
                       style={{ width: `${confidenceScores.dataQuality * 100}%` }}
                     />
                   </div>
                 </div>
-                <span className="text-sm font-medium text-[#1a1a1a] dark:text-white">
+                <span className="text-sm font-medium text-foreground">
                   {(confidenceScores.dataQuality * 100).toFixed(0)}%
                 </span>
               </div>
             </div>
 
             {confidenceScores.differentiationStrength !== undefined && (
-              <div className="rounded-xl border border-[#e5e5e5] bg-white p-4 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-                <div className="text-xs text-[#666] dark:text-[#999]">
+              <div className="rounded-xl border border bg-white p-4">
+                <div className="text-xs text-muted-foreground">
                   Pattern Strength
                 </div>
                 <div className="mt-2 flex items-center gap-3">
                   <div className="flex-1">
-                    <div className="h-2 w-full rounded-full bg-[#f5f5f5] dark:bg-[#1a1a1a]">
+                    <div className="h-2 w-full rounded-full bg-[#f5f5f5]">
                       <div
-                        className="h-2 rounded-full bg-blue-500 dark:bg-blue-600"
+                        className="h-2 rounded-full bg-blue-500"
                         style={{ width: `${confidenceScores.differentiationStrength * 100}%` }}
                       />
                     </div>
                   </div>
-                  <span className="text-sm font-medium text-[#1a1a1a] dark:text-white">
+                  <span className="text-sm font-medium text-foreground">
                     {(confidenceScores.differentiationStrength * 100).toFixed(0)}%
                   </span>
                 </div>
@@ -140,7 +140,7 @@ export default async function PlaybookDetailPage({ params }: PlaybookDetailPageP
         )}
 
         {/* Playbook Content */}
-        <div className="rounded-xl border border-[#e5e5e5] bg-white p-8 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
+        <div className="rounded-xl border border bg-white p-8">
           <PlaybookContent content={playbook.content} />
         </div>
       </div>

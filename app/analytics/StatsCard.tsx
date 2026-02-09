@@ -14,39 +14,39 @@ export default function StatsCard({
   subtitle,
 }: StatsCardProps) {
   return (
-    <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-      <div className="text-sm text-[#666] dark:text-[#999]">{title}</div>
-      <div className="mt-2 text-3xl font-bold text-[#1a1a1a] dark:text-white">
+    <div className="rounded-xl border border bg-white p-6">
+      <div className="text-sm text-muted-foreground">{title}</div>
+      <div className="mt-2 text-3xl font-bold text-foreground">
         {value}
       </div>
       {subtitle && (
-        <div className="mt-1 text-xs text-[#666] dark:text-[#999]">
+        <div className="mt-1 text-xs text-muted-foreground">
           {subtitle}
         </div>
       )}
       {trend !== undefined && (
         <div className="mt-2 flex items-center gap-1">
           {trend > 0 ? (
-            <span className="text-green-600 dark:text-green-400">↑</span>
+            <span className="text-green-600">↑</span>
           ) : trend < 0 ? (
-            <span className="text-red-600 dark:text-red-400">↓</span>
+            <span className="text-red-600">↓</span>
           ) : (
-            <span className="text-[#999]">→</span>
+            <span className="text-muted-foreground">→</span>
           )}
           <span
             className={`text-xs ${
               trend > 0
-                ? "text-green-600 dark:text-green-400"
+                ? "text-green-600"
                 : trend < 0
-                ? "text-red-600 dark:text-red-400"
-                : "text-[#999]"
+                ? "text-red-600"
+                : "text-muted-foreground"
             }`}
           >
             {trend > 0 ? "+" : ""}
             {trend.toFixed(1)}%
           </span>
           {trendLabel && (
-            <span className="text-xs text-[#666] dark:text-[#999]">
+            <span className="text-xs text-muted-foreground">
               {trendLabel}
             </span>
           )}

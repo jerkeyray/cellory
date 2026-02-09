@@ -95,9 +95,9 @@ export default function TranscriptDetailPage() {
 
   const getStatusBadge = useCallback((status: string) => {
     const styles = {
-      processing: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-      ready: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      error: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+      processing: "bg-blue-100 text-blue-800",
+      ready: "bg-green-100 text-green-800",
+      error: "bg-red-100 text-red-800",
     };
 
     return (
@@ -165,7 +165,7 @@ export default function TranscriptDetailPage() {
     return (
       <div className="flex min-h-[calc(100vh-73px)] items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600 dark:text-red-400">{error || "Transcript not found"}</p>
+          <p className="text-red-600">{error || "Transcript not found"}</p>
           <Link
             href="/transcripts"
             className="mt-4 inline-block text-sm text-[#ff6b35] hover:underline"
@@ -178,13 +178,13 @@ export default function TranscriptDetailPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-73px)] bg-white dark:bg-[#0a0a0a]">
+    <div className="min-h-[calc(100vh-73px)] bg-white">
       <div className="mx-auto max-w-7xl px-6 py-12">
         {/* Header */}
         <div className="mb-8">
           <Link
             href="/transcripts"
-            className="inline-flex items-center text-sm text-[#666] hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-[#ff6b35]"
           >
             <svg
               className="mr-2 h-4 w-4"
@@ -204,10 +204,10 @@ export default function TranscriptDetailPage() {
 
           <div className="mt-4 flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-[#1a1a1a] dark:text-white">
+              <h1 className="text-3xl font-bold text-foreground">
                 {transcript.filename}
               </h1>
-              <div className="mt-2 flex items-center gap-4 text-sm text-[#666] dark:text-[#999]">
+              <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
                 {getStatusBadge(transcript.status)}
                 <span>{formatDate(transcript.createdAt)}</span>
               </div>
@@ -216,7 +216,7 @@ export default function TranscriptDetailPage() {
             <button
               onClick={handleDelete}
               disabled={deleting}
-              className="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:bg-[#1a1a1a] dark:text-red-400 dark:hover:bg-red-950"
+              className="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
             >
               {deleting ? "Deleting..." : "Delete"}
             </button>
@@ -227,9 +227,9 @@ export default function TranscriptDetailPage() {
           {/* Main Content */}
           <div className="lg:col-span-2">
             {/* Transcript Content */}
-            <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
+            <div className="rounded-xl border border bg-white p-6">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-[#1a1a1a] dark:text-white">
+                <h2 className="text-lg font-semibold text-foreground">
                   Transcript
                 </h2>
 
@@ -258,11 +258,11 @@ export default function TranscriptDetailPage() {
               </div>
 
               {transcript.status === "processing" ? (
-                <div className="py-12 text-center text-[#666] dark:text-[#999]">
+                <div className="py-12 text-center text-muted-foreground">
                   Transcription in progress... Refresh the page to check status.
                 </div>
               ) : transcript.status === "error" ? (
-                <div className="py-12 text-center text-red-600 dark:text-red-400">
+                <div className="py-12 text-center text-red-600">
                   Transcription failed. Please try uploading again.
                 </div>
               ) : (
@@ -272,14 +272,14 @@ export default function TranscriptDetailPage() {
                       key={line.index}
                       className="flex gap-3 py-2"
                     >
-                      <div className="flex-shrink-0 w-16 text-xs text-[#999] font-mono pt-0.5">
+                      <div className="flex-shrink-0 w-16 text-xs text-muted-foreground font-mono pt-0.5">
                         {line.timestamp}
                       </div>
                       <div className="flex-1">
-                        <span className="text-xs font-medium text-[#666] dark:text-[#999]">
+                        <span className="text-xs font-medium text-muted-foreground">
                           {line.isAgent ? 'Agent' : 'Customer'}
                         </span>
-                        <p className="mt-1 text-sm text-[#1a1a1a] dark:text-white">
+                        <p className="mt-1 text-sm text-foreground">
                           {line.text}
                         </p>
                       </div>
@@ -293,33 +293,33 @@ export default function TranscriptDetailPage() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Metadata */}
-            <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-              <h3 className="mb-4 text-sm font-semibold text-[#1a1a1a] dark:text-white">
+            <div className="rounded-xl border border bg-white p-6">
+              <h3 className="mb-4 text-sm font-semibold text-foreground">
                 Metadata
               </h3>
               <dl className="space-y-3 text-sm">
                 <div>
-                  <dt className="text-[#666] dark:text-[#999]">Duration</dt>
-                  <dd className="mt-1 font-medium text-[#1a1a1a] dark:text-white">
+                  <dt className="text-muted-foreground">Duration</dt>
+                  <dd className="mt-1 font-medium text-foreground">
                     {formatDuration(transcript.durationSeconds)}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-[#666] dark:text-[#999]">Language</dt>
-                  <dd className="mt-1 font-medium text-[#1a1a1a] dark:text-white">
+                  <dt className="text-muted-foreground">Language</dt>
+                  <dd className="mt-1 font-medium text-foreground">
                     {transcript.language?.toUpperCase() || "—"}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-[#666] dark:text-[#999]">Word Count</dt>
-                  <dd className="mt-1 font-medium text-[#1a1a1a] dark:text-white">
+                  <dt className="text-muted-foreground">Word Count</dt>
+                  <dd className="mt-1 font-medium text-foreground">
                     {wordCount}
                   </dd>
                 </div>
                 {transcript.wordTimestamps && (
                   <div>
-                    <dt className="text-[#666] dark:text-[#999]">Timestamps</dt>
-                    <dd className="mt-1 font-medium text-[#1a1a1a] dark:text-white">
+                    <dt className="text-muted-foreground">Timestamps</dt>
+                    <dd className="mt-1 font-medium text-foreground">
                       {transcript.wordTimestamps.length} words
                     </dd>
                   </div>
@@ -328,13 +328,13 @@ export default function TranscriptDetailPage() {
             </div>
 
             {/* Associated Calls */}
-            <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-              <h3 className="mb-4 text-sm font-semibold text-[#1a1a1a] dark:text-white">
+            <div className="rounded-xl border border bg-white p-6">
+              <h3 className="mb-4 text-sm font-semibold text-foreground">
                 Call Analyses ({transcript.calls.length})
               </h3>
 
               {transcript.calls.length === 0 ? (
-                <p className="text-sm text-[#666] dark:text-[#999]">
+                <p className="text-sm text-muted-foreground">
                   No analyses yet
                 </p>
               ) : (
@@ -343,19 +343,19 @@ export default function TranscriptDetailPage() {
                     <Link
                       key={call.id}
                       href={`/calls/${call.id}`}
-                      className="block rounded-lg border border-[#e5e5e5] p-3 text-sm transition-colors hover:border-[#ff6b35] dark:border-[#2a2a2a] dark:hover:border-[#ff6b35]"
+                      className="block rounded-lg border border p-3 text-sm transition-colors hover:border-[#ff6b35]"
                     >
                       <div className="flex items-center justify-between">
                         <span
                           className={`font-medium ${
                             call.outcome === "success"
-                              ? "text-green-600 dark:text-green-400"
-                              : "text-red-600 dark:text-red-400"
+                              ? "text-green-600"
+                              : "text-red-600"
                           }`}
                         >
                           {call.outcome === "success" ? "Success" : "Failure"}
                         </span>
-                        <span className="text-[#999]">
+                        <span className="text-muted-foreground">
                           {formatDate(call.createdAt)}
                         </span>
                       </div>

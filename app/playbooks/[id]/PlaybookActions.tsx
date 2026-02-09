@@ -60,7 +60,7 @@ export default function PlaybookActions({ playbookId, content }: PlaybookActions
         {/* Copy Button */}
         <button
           onClick={handleCopy}
-          className="flex items-center gap-2 rounded-lg border border-[#e5e5e5] px-3 py-2 text-sm font-medium text-[#666] transition-colors hover:bg-[#f5f5f5] dark:border-[#2a2a2a] dark:text-[#999] dark:hover:bg-[#1a1a1a]"
+          className="flex items-center gap-2 rounded-lg border border px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-[#f5f5f5]"
           title="Copy to clipboard"
         >
           {copied ? (
@@ -103,7 +103,7 @@ export default function PlaybookActions({ playbookId, content }: PlaybookActions
         {/* Export Button */}
         <button
           onClick={handleExport}
-          className="flex items-center gap-2 rounded-lg border border-[#e5e5e5] px-3 py-2 text-sm font-medium text-[#666] transition-colors hover:bg-[#f5f5f5] dark:border-[#2a2a2a] dark:text-[#999] dark:hover:bg-[#1a1a1a]"
+          className="flex items-center gap-2 rounded-lg border border px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-[#f5f5f5]"
           title="Export as Markdown"
         >
           <svg
@@ -125,7 +125,7 @@ export default function PlaybookActions({ playbookId, content }: PlaybookActions
         {/* Delete Button */}
         <button
           onClick={() => setShowDeleteModal(true)}
-          className="flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
+          className="flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
           title="Delete playbook"
         >
           <svg
@@ -152,13 +152,13 @@ export default function PlaybookActions({ playbookId, content }: PlaybookActions
           onClick={() => !deleting && setShowDeleteModal(false)}
         >
           <div
-            className="mx-4 w-full max-w-md rounded-xl border border-[#e5e5e5] bg-white p-6 shadow-xl dark:border-[#2a2a2a] dark:bg-[#0a0a0a]"
+            className="mx-4 w-full max-w-md rounded-xl border border bg-white p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-xl font-bold text-[#1a1a1a] dark:text-white">
+            <h3 className="text-xl font-bold text-foreground">
               Delete Playbook
             </h3>
-            <p className="mt-2 text-sm text-[#666] dark:text-[#999]">
+            <p className="mt-2 text-sm text-muted-foreground">
               Are you sure you want to delete this playbook? This action cannot be undone.
             </p>
 
@@ -166,7 +166,7 @@ export default function PlaybookActions({ playbookId, content }: PlaybookActions
               <button
                 onClick={() => setShowDeleteModal(false)}
                 disabled={deleting}
-                className="flex-1 rounded-lg border border-[#e5e5e5] px-4 py-2.5 text-sm font-medium text-[#1a1a1a] transition-colors hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#2a2a2a] dark:text-white dark:hover:bg-[#1a1a1a]"
+                className="flex-1 rounded-lg border border px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>

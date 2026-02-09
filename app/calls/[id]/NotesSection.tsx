@@ -119,8 +119,8 @@ export default function NotesSection({ callId }: NotesSectionProps) {
   };
 
   return (
-    <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-      <h3 className="mb-4 text-lg font-semibold text-[#1a1a1a] dark:text-white">
+    <div className="rounded-xl border border bg-white p-6">
+      <h3 className="mb-4 text-lg font-semibold text-foreground">
         Notes
       </h3>
 
@@ -131,7 +131,7 @@ export default function NotesSection({ callId }: NotesSectionProps) {
           onChange={(e) => setNewNoteContent(e.target.value)}
           placeholder="Add coaching notes, context, observations..."
           rows={3}
-          className="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-2 text-sm text-[#1a1a1a] placeholder-[#999] focus:border-[#ff6b35] focus:outline-none dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:text-white"
+          className="w-full rounded-lg border border bg-white px-3 py-2 text-sm text-foreground placeholder-[#999] focus:border-[#ff6b35] focus:outline-none"
         />
         <div className="mt-2 flex justify-end">
           <button
@@ -146,7 +146,7 @@ export default function NotesSection({ callId }: NotesSectionProps) {
 
       {/* Notes List */}
       {notes.length === 0 ? (
-        <p className="text-sm text-[#666] dark:text-[#999]">
+        <p className="text-sm text-muted-foreground">
           No notes yet. Add notes to capture insights and coaching points.
         </p>
       ) : (
@@ -154,7 +154,7 @@ export default function NotesSection({ callId }: NotesSectionProps) {
           {notes.map((note) => (
             <div
               key={note.id}
-              className="rounded-lg border border-[#e5e5e5] p-4 dark:border-[#2a2a2a]"
+              className="rounded-lg border border p-4"
             >
               {editingNoteId === note.id ? (
                 <>
@@ -162,7 +162,7 @@ export default function NotesSection({ callId }: NotesSectionProps) {
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
                     rows={3}
-                    className="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#ff6b35] focus:outline-none dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:text-white"
+                    className="w-full rounded-lg border border bg-white px-3 py-2 text-sm text-foreground focus:border-[#ff6b35] focus:outline-none"
                   />
                   <div className="mt-2 flex gap-2">
                     <button
@@ -177,7 +177,7 @@ export default function NotesSection({ callId }: NotesSectionProps) {
                         setEditingNoteId(null);
                         setEditContent("");
                       }}
-                      className="rounded-lg border border-[#e5e5e5] px-3 py-1 text-xs font-medium text-[#666] transition-colors hover:bg-[#f5f5f5] dark:border-[#2a2a2a] dark:text-[#999] dark:hover:bg-[#1a1a1a]"
+                      className="rounded-lg border border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-[#f5f5f5]"
                     >
                       Cancel
                     </button>
@@ -185,11 +185,11 @@ export default function NotesSection({ callId }: NotesSectionProps) {
                 </>
               ) : (
                 <>
-                  <p className="whitespace-pre-wrap text-sm text-[#1a1a1a] dark:text-white">
+                  <p className="whitespace-pre-wrap text-sm text-foreground">
                     {note.content}
                   </p>
                   <div className="mt-3 flex items-center justify-between">
-                    <span className="text-xs text-[#666] dark:text-[#999]">
+                    <span className="text-xs text-muted-foreground">
                       {formatDate(note.createdAt)}
                       {note.updatedAt !== note.createdAt && " (edited)"}
                     </span>
@@ -205,7 +205,7 @@ export default function NotesSection({ callId }: NotesSectionProps) {
                       </button>
                       <button
                         onClick={() => handleDeleteNote(note.id)}
-                        className="text-xs text-red-600 hover:underline dark:text-red-400"
+                        className="text-xs text-red-600 hover:underline"
                       >
                         Delete
                       </button>

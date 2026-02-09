@@ -114,15 +114,15 @@ export default async function ComparePage() {
   const isV3 = comparison ? (comparison as any).schemaVersion === 3 : true;
 
   return (
-    <div className="min-h-[calc(100vh-73px)] bg-white dark:bg-[#0a0a0a]">
+    <div className="min-h-[calc(100vh-73px)] bg-white">
       <div className="mx-auto max-w-7xl px-6 py-12">
         {/* Header */}
         <div className="mb-8 flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[#1a1a1a] dark:text-white">
+            <h1 className="text-3xl font-bold text-foreground">
               Outcome Comparison
             </h1>
-            <p className="mt-2 text-sm text-[#666] dark:text-[#999]">
+            <p className="mt-2 text-sm text-muted-foreground">
               Statistical comparison of success vs. failure calls
             </p>
           </div>
@@ -131,29 +131,29 @@ export default async function ComparePage() {
 
         {/* Stats */}
         <div className="mb-8 grid gap-4 md:grid-cols-2">
-          <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-            <div className="text-sm text-[#666] dark:text-[#999]">
+          <div className="rounded-xl border border bg-white p-6">
+            <div className="text-sm text-muted-foreground">
               Success Calls
             </div>
-            <div className="mt-2 text-3xl font-bold text-green-600 dark:text-green-400">
+            <div className="mt-2 text-3xl font-bold text-green-600">
               {isSuccessOnlyMode
                 ? successInsights!.callCount
                 : comparison!.successCount}
             </div>
           </div>
-          <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-            <div className="text-sm text-[#666] dark:text-[#999]">
+          <div className="rounded-xl border border bg-white p-6">
+            <div className="text-sm text-muted-foreground">
               Failure Calls
             </div>
-            <div className="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">
+            <div className="mt-2 text-3xl font-bold text-red-600">
               {isSuccessOnlyMode ? 0 : comparison!.failureCount}
             </div>
           </div>
         </div>
 
         {insufficient ? (
-          <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-6 text-center dark:border-yellow-900 dark:bg-yellow-950">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+          <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-6 text-center">
+            <p className="text-sm text-yellow-800">
               No calls analyzed yet. Upload call transcripts to get started.
             </p>
             <Link
@@ -166,77 +166,77 @@ export default async function ComparePage() {
         ) : isSuccessOnlyMode ? (
           <>
             {/* Success-Only Insights */}
-            <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
+            <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
+              <p className="text-sm text-blue-800">
                 <strong>Success Insights Mode:</strong> Showing patterns from successful calls only.
                 Add failure calls to unlock comparative analysis and identify what specifically differentiates success from failure.
               </p>
             </div>
 
             {/* Success Benchmarks */}
-            <div className="mb-8 rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-              <h2 className="mb-4 text-lg font-semibold text-[#1a1a1a] dark:text-white">
+            <div className="mb-8 rounded-xl border border bg-white p-6">
+              <h2 className="mb-4 text-lg font-semibold text-foreground">
                 Success Benchmarks
               </h2>
-              <p className="mb-4 text-sm text-[#666] dark:text-[#999]">
+              <p className="mb-4 text-sm text-muted-foreground">
                 Key metrics from {successInsights!.callCount} successful {successInsights!.callCount === 1 ? 'call' : 'calls'}
               </p>
 
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div className="rounded-lg border border-[#e5e5e5] p-4 dark:border-[#2a2a2a]">
-                  <div className="text-xs text-[#666] dark:text-[#999]">
+                <div className="rounded-lg border border p-4">
+                  <div className="text-xs text-muted-foreground">
                     Avg Constraints Per Call
                   </div>
-                  <div className="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">
+                  <div className="mt-2 text-2xl font-bold text-green-600">
                     {successInsights!.avgConstraintsPerCall.toFixed(1)}
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-[#e5e5e5] p-4 dark:border-[#2a2a2a]">
-                  <div className="text-xs text-[#666] dark:text-[#999]">
+                <div className="rounded-lg border border p-4">
+                  <div className="text-xs text-muted-foreground">
                     Avg Resolution Latency
                   </div>
-                  <div className="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">
+                  <div className="mt-2 text-2xl font-bold text-green-600">
                     {successInsights!.avgResolutionLatency !== null
                       ? `${successInsights!.avgResolutionLatency.toFixed(1)}s`
                       : "N/A"}
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-[#e5e5e5] p-4 dark:border-[#2a2a2a]">
-                  <div className="text-xs text-[#666] dark:text-[#999]">
+                <div className="rounded-lg border border p-4">
+                  <div className="text-xs text-muted-foreground">
                     Control Recovery Rate
                   </div>
-                  <div className="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">
+                  <div className="mt-2 text-2xl font-bold text-green-600">
                     {(successInsights!.controlRecoveryRate * 100).toFixed(0)}%
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-[#e5e5e5] p-4 dark:border-[#2a2a2a]">
-                  <div className="text-xs text-[#666] dark:text-[#999]">
+                <div className="rounded-lg border border p-4">
+                  <div className="text-xs text-muted-foreground">
                     Time to First Constraint
                   </div>
-                  <div className="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">
+                  <div className="mt-2 text-2xl font-bold text-green-600">
                     {successInsights!.timeToFirstConstraint !== null
                       ? `${successInsights!.timeToFirstConstraint.toFixed(1)}s`
                       : "N/A"}
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-[#e5e5e5] p-4 dark:border-[#2a2a2a]">
-                  <div className="text-xs text-[#666] dark:text-[#999]">
+                <div className="rounded-lg border border p-4">
+                  <div className="text-xs text-muted-foreground">
                     Avg Constraint Severity
                   </div>
-                  <div className="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">
+                  <div className="mt-2 text-2xl font-bold text-green-600">
                     {(successInsights!.avgConstraintSeverity * 100).toFixed(0)}%
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-[#e5e5e5] p-4 dark:border-[#2a2a2a]">
-                  <div className="text-xs text-[#666] dark:text-[#999]">
+                <div className="rounded-lg border border p-4">
+                  <div className="text-xs text-muted-foreground">
                     Unresolved Constraints
                   </div>
-                  <div className="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">
+                  <div className="mt-2 text-2xl font-bold text-green-600">
                     {successInsights!.avgUnresolvedConstraints.toFixed(1)}
                   </div>
                 </div>
@@ -245,8 +245,8 @@ export default async function ComparePage() {
 
             {/* Constraint Type Distribution */}
             {Object.keys(successInsights!.constraintTypeDistribution).length > 0 && (
-              <div className="mb-8 rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-                <h2 className="mb-4 text-lg font-semibold text-[#1a1a1a] dark:text-white">
+              <div className="mb-8 rounded-xl border border bg-white p-6">
+                <h2 className="mb-4 text-lg font-semibold text-foreground">
                   Constraint Type Distribution
                 </h2>
                 <div className="space-y-3">
@@ -254,18 +254,18 @@ export default async function ComparePage() {
                     .sort((a, b) => b[1] - a[1])
                     .map(([type, ratio]) => (
                       <div key={type} className="flex items-center gap-3">
-                        <div className="w-32 text-sm text-[#666] dark:text-[#999]">
+                        <div className="w-32 text-sm text-muted-foreground">
                           {type}
                         </div>
                         <div className="flex-1">
-                          <div className="h-6 rounded-full bg-[#f5f5f5] dark:bg-[#1a1a1a]">
+                          <div className="h-6 rounded-full bg-[#f5f5f5]">
                             <div
-                              className="h-6 rounded-full bg-green-500 dark:bg-green-600"
+                              className="h-6 rounded-full bg-green-500"
                               style={{ width: `${ratio * 100}%` }}
                             />
                           </div>
                         </div>
-                        <div className="w-16 text-right text-sm font-medium text-[#1a1a1a] dark:text-white">
+                        <div className="w-16 text-right text-sm font-medium text-foreground">
                           {(ratio * 100).toFixed(0)}%
                         </div>
                       </div>
@@ -276,8 +276,8 @@ export default async function ComparePage() {
 
             {/* Strategy Usage */}
             {Object.keys(successInsights!.strategyUsage).length > 0 && (
-              <div className="mb-8 rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-                <h2 className="mb-4 text-lg font-semibold text-[#1a1a1a] dark:text-white">
+              <div className="mb-8 rounded-xl border border bg-white p-6">
+                <h2 className="mb-4 text-lg font-semibold text-foreground">
                   Strategy Usage
                 </h2>
                 <div className="space-y-3">
@@ -285,18 +285,18 @@ export default async function ComparePage() {
                     .sort((a, b) => b[1] - a[1])
                     .map(([strategy, ratio]) => (
                       <div key={strategy} className="flex items-center gap-3">
-                        <div className="w-32 text-sm text-[#666] dark:text-[#999]">
+                        <div className="w-32 text-sm text-muted-foreground">
                           {strategy.replace(/_/g, " ")}
                         </div>
                         <div className="flex-1">
-                          <div className="h-6 rounded-full bg-[#f5f5f5] dark:bg-[#1a1a1a]">
+                          <div className="h-6 rounded-full bg-[#f5f5f5]">
                             <div
-                              className="h-6 rounded-full bg-blue-500 dark:bg-blue-600"
+                              className="h-6 rounded-full bg-blue-500"
                               style={{ width: `${ratio * 100}%` }}
                             />
                           </div>
                         </div>
-                        <div className="w-16 text-right text-sm font-medium text-[#1a1a1a] dark:text-white">
+                        <div className="w-16 text-right text-sm font-medium text-foreground">
                           {(ratio * 100).toFixed(0)}%
                         </div>
                       </div>
@@ -307,23 +307,23 @@ export default async function ComparePage() {
 
             {/* Top Patterns */}
             {successInsights!.topPatterns.length > 0 && (
-              <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-                <h2 className="mb-4 text-lg font-semibold text-[#1a1a1a] dark:text-white">
+              <div className="rounded-xl border border bg-white p-6">
+                <h2 className="mb-4 text-lg font-semibold text-foreground">
                   Common Constraint Patterns
                 </h2>
-                <p className="mb-4 text-sm text-[#666] dark:text-[#999]">
+                <p className="mb-4 text-sm text-muted-foreground">
                   Most frequent constraint sequences in successful calls
                 </p>
                 <div className="space-y-2">
                   {successInsights!.topPatterns.map((pattern, i) => (
                     <div
                       key={i}
-                      className="flex items-center justify-between rounded-lg border border-[#e5e5e5] p-3 dark:border-[#2a2a2a]"
+                      className="flex items-center justify-between rounded-lg border border p-3"
                     >
-                      <span className="text-sm text-[#1a1a1a] dark:text-white">
+                      <span className="text-sm text-foreground">
                         {pattern.pattern}
                       </span>
-                      <span className="text-xs text-[#999]">
+                      <span className="text-xs text-muted-foreground">
                         {pattern.frequency}x
                       </span>
                     </div>
@@ -335,11 +335,11 @@ export default async function ComparePage() {
         ) : (
           <>
             {/* Key Differentiators */}
-            <div className="mb-8 rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-              <h2 className="mb-4 text-lg font-semibold text-[#1a1a1a] dark:text-white">
+            <div className="mb-8 rounded-xl border border bg-white p-6">
+              <h2 className="mb-4 text-lg font-semibold text-foreground">
                 Key Differentiators
               </h2>
-              <p className="mb-4 text-sm text-[#666] dark:text-[#999]">
+              <p className="mb-4 text-sm text-muted-foreground">
                 Features ranked by statistical significance
               </p>
 
@@ -350,39 +350,39 @@ export default async function ComparePage() {
                   .map((diff, i) => (
                     <div
                       key={i}
-                      className="rounded-lg border border-[#e5e5e5] p-4 dark:border-[#2a2a2a]"
+                      className="rounded-lg border border p-4"
                     >
                       <div className="mb-2 flex items-center justify-between">
-                        <span className="font-medium text-[#1a1a1a] dark:text-white">
+                        <span className="font-medium text-foreground">
                           {diff.feature}
                         </span>
-                        <span className="text-xs text-[#999]">
+                        <span className="text-xs text-muted-foreground">
                           {(diff.significance * 100).toFixed(0)}% significant
                         </span>
                       </div>
 
                       <div className="grid gap-3 md:grid-cols-3">
                         <div>
-                          <div className="text-xs text-[#666] dark:text-[#999]">
+                          <div className="text-xs text-muted-foreground">
                             Success
                           </div>
-                          <div className="mt-1 font-medium text-green-600 dark:text-green-400">
+                          <div className="mt-1 font-medium text-green-600">
                             {formatValue(diff.successValue, diff.feature)}
                           </div>
                         </div>
                         <div>
-                          <div className="text-xs text-[#666] dark:text-[#999]">
+                          <div className="text-xs text-muted-foreground">
                             Failure
                           </div>
-                          <div className="mt-1 font-medium text-red-600 dark:text-red-400">
+                          <div className="mt-1 font-medium text-red-600">
                             {formatValue(diff.failureValue, diff.feature)}
                           </div>
                         </div>
                         <div>
-                          <div className="text-xs text-[#666] dark:text-[#999]">
+                          <div className="text-xs text-muted-foreground">
                             Difference
                           </div>
-                          <div className="mt-1 font-medium text-[#1a1a1a] dark:text-white">
+                          <div className="mt-1 font-medium text-foreground">
                             {diff.percentDiff.toFixed(1)}%
                           </div>
                         </div>
@@ -395,43 +395,43 @@ export default async function ComparePage() {
             {/* Side-by-Side Profiles */}
             <div className="grid gap-6 lg:grid-cols-2">
               {/* Success Profile */}
-              <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-                <h3 className="mb-4 text-lg font-semibold text-green-600 dark:text-green-400">
-                  Success Profile {isV3 && <span className="text-xs text-[#999]">(v3)</span>}
+              <div className="rounded-xl border border bg-white p-6">
+                <h3 className="mb-4 text-lg font-semibold text-green-600">
+                  Success Profile {isV3 && <span className="text-xs text-muted-foreground">(v3)</span>}
                 </h3>
                 <dl className="space-y-3 text-sm">
                   {isV3 ? (
                     <>
                       {/* V3 Success Profile */}
                       <div className="flex justify-between">
-                        <dt className="text-[#666] dark:text-[#999]">Constraints / Call</dt>
-                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        <dt className="text-muted-foreground">Constraints / Call</dt>
+                        <dd className="font-medium text-foreground">
                           {(comparison?.successProfile as any).avg_constraints_per_call.toFixed(1)}
                         </dd>
                       </div>
                       <div className="flex justify-between">
-                        <dt className="text-[#666] dark:text-[#999]">Resolution Latency</dt>
-                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        <dt className="text-muted-foreground">Resolution Latency</dt>
+                        <dd className="font-medium text-foreground">
                           {(comparison?.successProfile as any).avg_resolution_latency !== null
                             ? `${((comparison?.successProfile as any).avg_resolution_latency).toFixed(1)}s`
                             : "—"}
                         </dd>
                       </div>
                       <div className="flex justify-between">
-                        <dt className="text-[#666] dark:text-[#999]">Control Recovery Rate</dt>
-                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        <dt className="text-muted-foreground">Control Recovery Rate</dt>
+                        <dd className="font-medium text-foreground">
                           {((comparison?.successProfile as any).control_recovery_before_commitment_rate * 100).toFixed(0)}%
                         </dd>
                       </div>
                       <div className="flex justify-between">
-                        <dt className="text-[#666] dark:text-[#999]">Unresolved Constraints</dt>
-                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        <dt className="text-muted-foreground">Unresolved Constraints</dt>
+                        <dd className="font-medium text-foreground">
                           {(comparison?.successProfile as any).avg_unresolved_constraints.toFixed(1)}
                         </dd>
                       </div>
                       <div className="flex justify-between">
-                        <dt className="text-[#666] dark:text-[#999]">Constraint Severity</dt>
-                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        <dt className="text-muted-foreground">Constraint Severity</dt>
+                        <dd className="font-medium text-foreground">
                           {((comparison?.successProfile as any).avg_constraint_severity * 100).toFixed(0)}%
                         </dd>
                       </div>
@@ -440,26 +440,26 @@ export default async function ComparePage() {
                     <>
                       {/* V2 Success Profile */}
                       <div className="flex justify-between">
-                        <dt className="text-[#666] dark:text-[#999]">Avg Signals</dt>
-                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        <dt className="text-muted-foreground">Avg Signals</dt>
+                        <dd className="font-medium text-foreground">
                           {(comparison?.successProfile as any).avgSignalCount.toFixed(1)}
                         </dd>
                       </div>
                       <div className="flex justify-between">
-                        <dt className="text-[#666] dark:text-[#999]">Signal Density</dt>
-                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        <dt className="text-muted-foreground">Signal Density</dt>
+                        <dd className="font-medium text-foreground">
                           {(comparison?.successProfile as any).avgSignalDensity.toFixed(2)} / min
                         </dd>
                       </div>
                       <div className="flex justify-between">
-                        <dt className="text-[#666] dark:text-[#999]">Avg Confidence</dt>
-                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        <dt className="text-muted-foreground">Avg Confidence</dt>
+                        <dd className="font-medium text-foreground">
                           {((comparison?.successProfile as any).avgConfidence * 100).toFixed(0)}%
                         </dd>
                       </div>
                       <div className="flex justify-between">
-                        <dt className="text-[#666] dark:text-[#999]">Early Signals</dt>
-                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        <dt className="text-muted-foreground">Early Signals</dt>
+                        <dd className="font-medium text-foreground">
                           {((comparison?.successProfile as any).earlySignalRatio * 100).toFixed(0)}%
                         </dd>
                       </div>
@@ -469,43 +469,43 @@ export default async function ComparePage() {
               </div>
 
               {/* Failure Profile */}
-              <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-                <h3 className="mb-4 text-lg font-semibold text-red-600 dark:text-red-400">
-                  Failure Profile {isV3 && <span className="text-xs text-[#999]">(v3)</span>}
+              <div className="rounded-xl border border bg-white p-6">
+                <h3 className="mb-4 text-lg font-semibold text-red-600">
+                  Failure Profile {isV3 && <span className="text-xs text-muted-foreground">(v3)</span>}
                 </h3>
                 <dl className="space-y-3 text-sm">
                   {isV3 ? (
                     <>
                       {/* V3 Failure Profile */}
                       <div className="flex justify-between">
-                        <dt className="text-[#666] dark:text-[#999]">Constraints / Call</dt>
-                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        <dt className="text-muted-foreground">Constraints / Call</dt>
+                        <dd className="font-medium text-foreground">
                           {(comparison?.failureProfile as any).avg_constraints_per_call.toFixed(1)}
                         </dd>
                       </div>
                       <div className="flex justify-between">
-                        <dt className="text-[#666] dark:text-[#999]">Resolution Latency</dt>
-                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        <dt className="text-muted-foreground">Resolution Latency</dt>
+                        <dd className="font-medium text-foreground">
                           {(comparison?.failureProfile as any).avg_resolution_latency !== null
                             ? `${((comparison?.failureProfile as any).avg_resolution_latency).toFixed(1)}s`
                             : "—"}
                         </dd>
                       </div>
                       <div className="flex justify-between">
-                        <dt className="text-[#666] dark:text-[#999]">Control Recovery Rate</dt>
-                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        <dt className="text-muted-foreground">Control Recovery Rate</dt>
+                        <dd className="font-medium text-foreground">
                           {((comparison?.failureProfile as any).control_recovery_before_commitment_rate * 100).toFixed(0)}%
                         </dd>
                       </div>
                       <div className="flex justify-between">
-                        <dt className="text-[#666] dark:text-[#999]">Unresolved Constraints</dt>
-                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        <dt className="text-muted-foreground">Unresolved Constraints</dt>
+                        <dd className="font-medium text-foreground">
                           {(comparison?.failureProfile as any).avg_unresolved_constraints.toFixed(1)}
                         </dd>
                       </div>
                       <div className="flex justify-between">
-                        <dt className="text-[#666] dark:text-[#999]">Constraint Severity</dt>
-                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        <dt className="text-muted-foreground">Constraint Severity</dt>
+                        <dd className="font-medium text-foreground">
                           {((comparison?.failureProfile as any).avg_constraint_severity * 100).toFixed(0)}%
                         </dd>
                       </div>
@@ -514,26 +514,26 @@ export default async function ComparePage() {
                     <>
                       {/* V2 Failure Profile */}
                       <div className="flex justify-between">
-                        <dt className="text-[#666] dark:text-[#999]">Avg Signals</dt>
-                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        <dt className="text-muted-foreground">Avg Signals</dt>
+                        <dd className="font-medium text-foreground">
                           {(comparison?.failureProfile as any).avgSignalCount.toFixed(1)}
                         </dd>
                       </div>
                       <div className="flex justify-between">
-                        <dt className="text-[#666] dark:text-[#999]">Signal Density</dt>
-                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        <dt className="text-muted-foreground">Signal Density</dt>
+                        <dd className="font-medium text-foreground">
                           {(comparison?.failureProfile as any).avgSignalDensity.toFixed(2)} / min
                         </dd>
                       </div>
                       <div className="flex justify-between">
-                        <dt className="text-[#666] dark:text-[#999]">Avg Confidence</dt>
-                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        <dt className="text-muted-foreground">Avg Confidence</dt>
+                        <dd className="font-medium text-foreground">
                           {((comparison?.failureProfile as any).avgConfidence * 100).toFixed(0)}%
                         </dd>
                       </div>
                       <div className="flex justify-between">
-                        <dt className="text-[#666] dark:text-[#999]">Early Signals</dt>
-                        <dd className="font-medium text-[#1a1a1a] dark:text-white">
+                        <dt className="text-muted-foreground">Early Signals</dt>
+                        <dd className="font-medium text-foreground">
                           {((comparison?.failureProfile as any).earlySignalRatio * 100).toFixed(0)}%
                         </dd>
                       </div>
