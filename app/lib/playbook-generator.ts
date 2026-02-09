@@ -92,7 +92,9 @@ function buildPlaybookPrompt(comparison: ComparisonResult): string {
     const v3Success = successProfile as any;
     const v3Failure = failureProfile as any;
 
-    return `Generate a concise behavioral playbook for financial call agents based on this analysis.
+    return `You are an expert at generating Cellory playbooks. Generate a behavioral playbook for financial call agents based on this analysis.
+
+**CRITICAL: Follow this EXACT markdown structure. This format is optimized for human readability, LLM parsing, and spoken TTS flow.**
 
 Sample: ${comparison.successCount} successful calls, ${comparison.failureCount} failed calls
 
@@ -113,26 +115,65 @@ Failure Profile:
 - Unresolved constraints: ${v3Failure.avg_unresolved_constraints.toFixed(1)}
 - Constraint severity: ${(v3Failure.avg_constraint_severity * 100).toFixed(0)}%
 
-Output format (markdown):
-# Behavioral Playbook
+**Required Output Format (markdown):**
 
-## Constraint Response Strategy
-[Guidance on handling each constraint type (trust, capability, time, authority, risk, clarity) based on data]
+\`\`\`markdown
+# [Playbook Title]
+[Short descriptive subtitle — e.g. "Winning Constraint Handling Patterns in Financial Collections Calls"]
 
-## Resolution Timing
-[Guidance on when and how quickly to respond to constraints based on data]
+## Core Success Principles
+- Principle 1. Always [clear directive based on data]...
+- Principle 2. Use [strategy] in [X%] of winning calls...
+- Principle 3. [Another directive]...
 
-## Control Recovery Patterns
-[Guidance on when to recover control and maintain it through to commitment based on data]
+## Top Constraint / Objection Types & Winning Responses
+### [Constraint Type] ([percentage]% of successful calls)
+- Primary winning strategy: **[strategy name]**
+- How to apply: [short, directive sentences]
+- Example phrasing: "You can say: ..."
+- Expected outcome: [benefit / benchmark]
 
-## Commitment Approach
-[Guidance on when to push for commitment vs. wait based on data]
+### [Next Constraint Type] ([percentage]%)
+[Same structure]
 
-Keep guidance specific, actionable, and data-driven. No generic advice.`;
+## Key Timing & Performance Benchmarks
+- Resolution latency: [value] seconds in successful calls (vs. [value] in failures)
+- Time to first constraint: [value] seconds
+- [Other timing metrics from the data]
+
+## Control & Recovery Guidelines
+- Proactive rule 1: [directive from data]
+- Never: [anti-pattern from failures]
+- Must: [critical success factor]
+
+## Recommended Call Flow (Step-by-Step)
+1. [Step 1] — [action + rationale from data]
+2. [Step 2] — [action + rationale]
+...
+
+## When to Escalate or Pivot
+- Conditions: [based on failure patterns]
+- Scripts: [example phrases]
+
+## Data Notes / Evolution
+- Derived from: ${comparison.successCount} successful calls (compared to ${comparison.failureCount} failures)
+- Last updated: [current date]
+- Next improvement: Compare against additional failure patterns to unlock [specific delta]
+\`\`\`
+
+**Formatting Rules:**
+- Use **bold** for strategy names, key metrics, and directive verbs
+- Use short bullet points (1-2 lines max)
+- Spell numbers naturally for speech: "eight point five seconds", "around one hundred twenty-four seconds"
+- Percentages in parentheses after headings: (42% of cases)
+- No long paragraphs — break into bullets or numbered steps
+- Keep guidance specific, actionable, and data-driven. No generic advice.`;
   }
 
   // V2 Playbook Prompt
-  return `Generate a concise behavioral playbook for financial call agents based on this analysis.
+  return `You are an expert at generating Cellory playbooks. Generate a behavioral playbook for financial call agents based on this analysis.
+
+**CRITICAL: Follow this EXACT markdown structure. This format is optimized for human readability, LLM parsing, and spoken TTS flow.**
 
 Sample: ${comparison.successCount} successful calls, ${comparison.failureCount} failed calls
 
@@ -151,22 +192,59 @@ Failure Profile:
 - First signal at: ${(failureProfile as any).avgFirstSignalTime.toFixed(1)}s
 - Signal distribution: ${((failureProfile as any).earlySignalRatio * 100).toFixed(0)}% early, ${((failureProfile as any).midSignalRatio * 100).toFixed(0)}% mid, ${((failureProfile as any).lateSignalRatio * 100).toFixed(0)}% late
 
-Output format (markdown):
-# Behavioral Playbook
+**Required Output Format (markdown):**
 
-## Opening Strategy
-[Guidance on call opening based on data]
+\`\`\`markdown
+# [Playbook Title]
+[Short descriptive subtitle — e.g. "Winning Signal Patterns in Financial Calls"]
 
-## Objection Handling
-[Guidance on handling objections based on data]
+## Core Success Principles
+- Principle 1. Always [clear directive based on data]...
+- Principle 2. Use [strategy] in [X%] of winning calls...
+- Principle 3. [Another directive]...
 
-## Escalation Management
-[Guidance on managing escalations based on data]
+## Top Signal / Objection Types & Winning Responses
+### [Signal Type] ([percentage]% of successful calls)
+- Primary winning strategy: **[strategy name]**
+- How to apply: [short, directive sentences]
+- Example phrasing: "You can say: ..."
+- Expected outcome: [benefit / benchmark]
 
-## Closing
-[Guidance on call closing based on data]
+### [Next Signal Type] ([percentage]%)
+[Same structure]
 
-Keep guidance specific, actionable, and data-driven. No generic advice.`;
+## Key Timing & Performance Benchmarks
+- First signal timing: [value] seconds in successful calls (vs. [value] in failures)
+- Signal density: [value] per minute
+- [Other timing metrics from the data]
+
+## Control & Recovery Guidelines
+- Proactive rule 1: [directive from data]
+- Never: [anti-pattern from failures]
+- Must: [critical success factor]
+
+## Recommended Call Flow (Step-by-Step)
+1. [Step 1] — [action + rationale from data]
+2. [Step 2] — [action + rationale]
+...
+
+## When to Escalate or Pivot
+- Conditions: [based on failure patterns]
+- Scripts: [example phrases]
+
+## Data Notes / Evolution
+- Derived from: ${comparison.successCount} successful calls (compared to ${comparison.failureCount} failures)
+- Last updated: [current date]
+- Next improvement: Compare against additional failure patterns to unlock [specific delta]
+\`\`\`
+
+**Formatting Rules:**
+- Use **bold** for strategy names, key metrics, and directive verbs
+- Use short bullet points (1-2 lines max)
+- Spell numbers naturally for speech: "eight point five seconds"
+- Percentages in parentheses after headings: (42% of cases)
+- No long paragraphs — break into bullets or numbered steps
+- Keep guidance specific, actionable, and data-driven. No generic advice.`;
 }
 
 /**
@@ -259,7 +337,9 @@ function buildSuccessPlaybookPrompt(insights: SuccessInsights): string {
     .map((p) => `- ${p.pattern} (${p.frequency}x)`)
     .join("\n");
 
-  return `Generate a success pattern playbook based on ${insights.callCount} successful financial calls.
+  return `You are an expert at generating Cellory playbooks. Generate a success pattern playbook based on ${insights.callCount} successful financial calls.
+
+**CRITICAL: Follow this EXACT markdown structure. This format is optimized for human readability, LLM parsing, and spoken TTS flow.**
 
 **Success Metrics:**
 - Avg constraints per call: ${insights.avgConstraintsPerCall.toFixed(1)}
@@ -280,26 +360,59 @@ ${strategies || "None"}
 **Common Constraint Patterns:**
 ${patterns || "None"}
 
-Output format (markdown):
-# Success Patterns Playbook
+**Required Output Format (markdown):**
 
-## What Works Well
-[Identify the strongest patterns from the data - what are successful reps doing consistently?]
+\`\`\`markdown
+# [Playbook Title]
+[Short descriptive subtitle — e.g. "Success Patterns from Financial Collections Calls"]
 
-## Constraint Handling Success Patterns
-[Specific guidance on handling each constraint type based on what works in successful calls]
+## Core Success Principles
+- Principle 1. Always [clear directive based on observed success patterns]...
+- Principle 2. Use [strategy] in [X%] of calls...
+- Principle 3. [Another directive from data]...
 
-## Timing Benchmarks
-[When constraints appear and how quickly they're resolved in successful calls]
+## Top Constraint / Objection Types & Successful Responses
+### [Constraint Type] ([percentage]% of successful calls)
+- Primary successful strategy: **[strategy name from data]**
+- How to apply: [short, directive sentences]
+- Example phrasing: "You can say: ..."
+- Expected outcome: [benefit / benchmark from data]
 
-## Control & Recovery Best Practices
-[Patterns around maintaining and recovering control that lead to success]
+### [Next Constraint Type] ([percentage]%)
+[Same structure for each constraint type in distribution]
 
-## Recommended Approach
-[Actionable steps to replicate these success patterns]
+## Key Timing & Performance Benchmarks
+- Resolution latency: around [value] seconds in successful calls
+- Time to first constraint: around [value] seconds
+- Control recovery rate: [percentage]%
+- [Other timing metrics from the data]
 
-## Add Failure Data to Unlock
-[Brief note: "Compare with failure calls to identify what specifically differentiates success from failure"]
+## Control & Recovery Guidelines
+- Proactive rule 1: [directive from successful patterns]
+- Always: [critical success factor from data]
+- Must: [another critical success factor]
 
-Keep guidance specific and data-driven. Focus on what IS working, not what MIGHT work.`;
+## Recommended Call Flow (Step-by-Step)
+1. [Step 1] — [action + rationale from success data]
+2. [Step 2] — [action + rationale]
+...
+
+## When to Escalate or Pivot
+- Conditions: [based on observed patterns]
+- Scripts: [example phrases that work]
+
+## Data Notes / Evolution
+- Derived from: ${insights.callCount} successful calls
+- Last updated: [current date]
+- Next improvement: Compare with failure calls to identify what specifically differentiates success from failure
+\`\`\`
+
+**Formatting Rules:**
+- Use **bold** for strategy names, key metrics, and directive verbs
+- Use short bullet points (1-2 lines max)
+- Spell numbers naturally for speech: "eight point five seconds", "around one hundred twenty-four seconds"
+- Percentages in parentheses after headings: (42% of cases)
+- No long paragraphs — break into bullets or numbered steps
+- Focus on what IS working in the data, not what MIGHT work
+- Keep guidance specific, actionable, and data-driven. No generic advice.`;
 }
