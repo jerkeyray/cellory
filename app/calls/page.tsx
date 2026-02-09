@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { prisma } from "@/app/lib/prisma";
 import CallsListClient from "./CallsListClient";
+import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
 
 export default async function CallsPage() {
   // Fetch calls server-side with all necessary data
@@ -33,27 +36,32 @@ export default async function CallsPage() {
     failure: calls.filter((c) => c.outcome === "failure").length,
   };
 
-  return (
-    <div className="min-h-[calc(100vh-73px)] bg-white dark:bg-[#0a0a0a]">
-      <div className="mx-auto max-w-7xl px-6 py-12">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-[#1a1a1a] dark:text-white">
-              Call Analyses
-            </h1>
-            <p className="mt-2 text-sm text-[#666] dark:text-[#999]">
-              Extract behavioral signals and patterns from calls
-            </p>
-          </div>
+  // Check if we should show playbook generation prompt
+  const playbooksCount = await prisma.playbook.count();
+  const showPlaybookPrompt = calls.length >= 3 && playbooksCount === 0;
 
-          <Link
-            href="/calls/new"
-            className="rounded-lg bg-[#ff6b35] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#e55a2b]"
-          >
-            New Analysis
-          </Link>
-        </div>
+  return (
+    <div className="min-h-[calc(100vh-73px)] bg-background">
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        <PageHeader
+          title="Call Analysis"
+          description="Behavioral analysis results from your recordings"
+          actions={
+            <>
+              {showPlaybookPrompt && (
+                <Button variant="outline" asChild>
+                  <Link href="/compare">Generate Playbook</Link>
+                </Button>
+              )}
+              <Button asChild>
+                <Link href="/calls/new" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Analyze Recording
+                </Link>
+              </Button>
+            </>
+          }
+        />
 
         {/* Client component handles filtering and rendering */}
         <CallsListClient calls={calls} stats={stats} />

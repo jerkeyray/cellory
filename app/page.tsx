@@ -1,8 +1,10 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Upload, BarChart3, BookOpen, TrendingUp } from "lucide-react";
 import { prisma } from "@/app/lib/prisma";
-import WorkflowGuide from "./components/WorkflowGuide";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default async function Home() {
   const session = await auth();
@@ -28,177 +30,133 @@ export default async function Home() {
       ? ((successCalls / totalCompleteCalls) * 100).toFixed(1)
       : "—";
 
+  // Check if we should show the playbook generation prompt
+  const showPlaybookPrompt = callsCount >= 3 && playbooksCount === 0;
+
   return (
-    <div className="min-h-[calc(100vh-73px)] bg-white dark:bg-[#0a0a0a]">
-      <div className="mx-auto max-w-7xl px-6 py-16">
+    <div className="min-h-[calc(100vh-73px)] bg-background">
+      <div className="mx-auto max-w-7xl px-6 py-12">
         {/* Hero Section */}
-        <div className="mb-16 text-center">
-          <h1 className="text-5xl font-bold tracking-tight text-[#1a1a1a] dark:text-white">
-            Welcome to Cellory
+        <div className="mb-12">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground">
+            Call Intelligence Dashboard
           </h1>
-          <p className="mt-4 text-lg text-[#666] dark:text-[#999]">
-            Convert unstructured call recordings into structured, auditable
-            insights
+          <p className="mt-3 text-lg text-muted-foreground">
+            Turn call recordings into actionable coaching insights
           </p>
+        </div>
+
+        {/* Contextual Playbook Prompt */}
+        {showPlaybookPrompt && (
+          <Card className="mb-8 border-primary/20 bg-primary/5">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold">Ready to generate your first playbook?</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    You have {callsCount} analyzed calls. Generate a coaching playbook from your call patterns.
+                  </p>
+                  <Button asChild className="mt-4" size="sm">
+                    <Link href="/compare">Generate Playbook</Link>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Stats Section */}
+        <div className="mb-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>Transcripts</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-primary">{transcriptsCount}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>Calls Analyzed</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-primary">{callsCount}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>Playbooks Generated</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-primary">{playbooksCount}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>Success Rate</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-primary">
+                {typeof successRate === "string" ? successRate : `${successRate}%`}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Quick Actions Grid */}
         <div className="grid gap-6 md:grid-cols-3">
-          {/* Upload Audio */}
-          <Link
-            href="/transcripts"
-            className="group rounded-2xl border border-[#e5e5e5] bg-white p-8 transition-all hover:border-[#ff6b35] hover:shadow-lg dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:hover:border-[#ff6b35]"
-          >
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-[#ff6b35] bg-opacity-10">
-              <svg
-                className="h-6 w-6 text-[#ff6b35]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                />
-              </svg>
-            </div>
-            <h2 className="mb-2 text-xl font-semibold text-[#1a1a1a] dark:text-white">
-              Upload Audio
-            </h2>
-            <p className="text-sm text-[#666] dark:text-[#999]">
-              Upload financial call recordings and convert them to transcripts
-            </p>
-          </Link>
+          {/* Upload Recordings */}
+          <Card className="group transition-all hover:border-primary hover:shadow-md">
+            <Link href="/transcripts">
+              <CardHeader>
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                  <Upload className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle className="text-xl">Upload Recordings</CardTitle>
+                <CardDescription>
+                  Add call recordings for automatic transcription and analysis
+                </CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
 
           {/* Analyze Calls */}
-          <Link
-            href="/calls"
-            className="group rounded-2xl border border-[#e5e5e5] bg-white p-8 transition-all hover:border-[#ff6b35] hover:shadow-lg dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:hover:border-[#ff6b35]"
-          >
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-[#ff6b35] bg-opacity-10">
-              <svg
-                className="h-6 w-6 text-[#ff6b35]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
-            </div>
-            <h2 className="mb-2 text-xl font-semibold text-[#1a1a1a] dark:text-white">
-              Analyze Calls
-            </h2>
-            <p className="text-sm text-[#666] dark:text-[#999]">
-              Extract behavioral signals and analyze call patterns
-            </p>
-          </Link>
+          <Card className="group transition-all hover:border-primary hover:shadow-md">
+            <Link href="/calls">
+              <CardHeader>
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                  <BarChart3 className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle className="text-xl">Call Analysis</CardTitle>
+                <CardDescription>
+                  View behavioral signals, patterns, and call outcomes
+                </CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
 
           {/* View Playbooks */}
-          <Link
-            href="/playbooks"
-            className="group rounded-2xl border border-[#e5e5e5] bg-white p-8 transition-all hover:border-[#ff6b35] hover:shadow-lg dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:hover:border-[#ff6b35]"
-          >
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-[#ff6b35] bg-opacity-10">
-              <svg
-                className="h-6 w-6 text-[#ff6b35]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                />
-              </svg>
-            </div>
-            <h2 className="mb-2 text-xl font-semibold text-[#1a1a1a] dark:text-white">
-              View Playbooks
-            </h2>
-            <p className="text-sm text-[#666] dark:text-[#999]">
-              Generated behavioral guidance from analyzed calls
-            </p>
-          </Link>
-        </div>
-
-        {/* Stats Section */}
-        <div className="mt-16 grid gap-6 md:grid-cols-4">
-          <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-            <div className="text-3xl font-bold text-[#ff6b35]">{transcriptsCount}</div>
-            <div className="mt-1 text-sm text-[#666] dark:text-[#999]">
-              Transcripts
-            </div>
-          </div>
-          <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-            <div className="text-3xl font-bold text-[#ff6b35]">{callsCount}</div>
-            <div className="mt-1 text-sm text-[#666] dark:text-[#999]">
-              Calls Analyzed
-            </div>
-          </div>
-          <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-            <div className="text-3xl font-bold text-[#ff6b35]">{playbooksCount}</div>
-            <div className="mt-1 text-sm text-[#666] dark:text-[#999]">
-              Playbooks Generated
-            </div>
-          </div>
-          <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-            <div className="text-3xl font-bold text-[#ff6b35]">
-              {typeof successRate === "string" ? successRate : `${successRate}%`}
-            </div>
-            <div className="mt-1 text-sm text-[#666] dark:text-[#999]">
-              Success Rate
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        {(transcriptsCount === 0 || callsCount === 0) && (
-          <div className="mt-16 rounded-xl border border-blue-200 bg-blue-50 p-6 dark:border-blue-900 dark:bg-blue-950">
-            <h3 className="font-semibold text-blue-900 dark:text-blue-100">
-              👋 Welcome to Cellory!
-            </h3>
-            <p className="mt-2 text-sm text-blue-800 dark:text-blue-200">
-              {transcriptsCount === 0
-                ? "Get started by uploading your first call recording. We'll transcribe it and extract behavioral signals automatically."
-                : "Great! Now analyze your transcripts to extract insights and patterns."}
-            </p>
-            <Link
-              href={transcriptsCount === 0 ? "/transcripts" : "/calls/new"}
-              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-            >
-              {transcriptsCount === 0 ? "Upload First Recording" : "Analyze Transcripts"}
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
+          <Card className="group transition-all hover:border-primary hover:shadow-md">
+            <Link href="/playbooks">
+              <CardHeader>
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                  <BookOpen className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle className="text-xl">Coaching Playbooks</CardTitle>
+                <CardDescription>
+                  Data-driven coaching playbooks from your call library
+                </CardDescription>
+              </CardHeader>
             </Link>
-          </div>
-        )}
+          </Card>
+        </div>
       </div>
-
-      {/* Workflow Guide */}
-      <WorkflowGuide
-        transcriptsCount={transcriptsCount}
-        callsCount={callsCount}
-        playbooksCount={playbooksCount}
-      />
     </div>
   );
 }

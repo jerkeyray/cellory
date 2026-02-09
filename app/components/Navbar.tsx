@@ -1,6 +1,26 @@
 import { auth, signOut } from "@/auth";
 import Link from "next/link";
+import { Menu } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import QuickActionsMenu from "./QuickActionsMenu";
+
+const navLinks = [
+  { href: "/transcripts", label: "Transcripts" },
+  { href: "/calls", label: "Calls" },
+  { href: "/analytics", label: "Analytics" },
+  { href: "/compare", label: "Compare" },
+  { href: "/playbooks", label: "Playbooks" },
+];
 
 export default async function Navbar() {
   let session = null;
@@ -15,114 +35,128 @@ export default async function Navbar() {
     return null;
   }
 
+  const userInitials = session.user.name
+    ?.split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase() || "U";
+
   return (
-    <nav className="border-b border-[#e5e5e5] bg-white dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-      <div className="mx-auto flex max-w-7xl items-center justify-center gap-8 px-6 py-4">
+    <nav className="border-b bg-background">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         {/* Logo */}
-        <Link href="/" className="text-xl font-bold text-[#1a1a1a] dark:text-white">
+        <Link href="/" className="text-xl font-bold text-foreground">
           Cellory
         </Link>
 
-        {/* Navigation Links */}
-        <div className="hidden items-center gap-8 md:flex">
-          <Link
-            href="/transcripts"
-            className="text-sm font-medium text-[#666] transition-colors hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
-          >
-            Transcripts
-          </Link>
-          <Link
-            href="/calls"
-            className="text-sm font-medium text-[#666] transition-colors hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
-          >
-            Calls
-          </Link>
-          <Link
-            href="/analytics"
-            className="text-sm font-medium text-[#666] transition-colors hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
-          >
-            Analytics
-          </Link>
-          <Link
-            href="/compare"
-            className="text-sm font-medium text-[#666] transition-colors hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
-          >
-            Compare
-          </Link>
-          <Link
-            href="/playbooks"
-            className="text-sm font-medium text-[#666] transition-colors hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
-          >
-            Playbooks
-          </Link>
+        {/* Desktop Navigation Links */}
+        <div className="hidden items-center gap-6 md:flex">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
 
-        {/* User Menu */}
-        <div className="ml-auto flex items-center gap-4">
+        {/* Right Side: Quick Actions + User Menu */}
+        <div className="flex items-center gap-3">
           <QuickActionsMenu />
 
-          <div className="flex items-center gap-3">
-            {session.user.image && (
-              <img
-                src={session.user.image}
-                alt={session.user.name || "User"}
-                className="h-8 w-8 rounded-full"
-              />
-            )}
-            <span className="hidden text-sm text-[#666] dark:text-[#999] sm:inline">
-              {session.user.name}
-            </span>
+          {/* Desktop User Dropdown */}
+          <div className="hidden md:block">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={session.user.image || undefined} alt={session.user.name || ""} />
+                    <AvatarFallback>{userInitials}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium">{session.user.name}</p>
+                    {session.user.email && (
+                      <p className="text-xs text-muted-foreground">{session.user.email}</p>
+                    )}
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <form
+                  action={async () => {
+                    "use server";
+                    await signOut({ redirectTo: "/auth/signin" });
+                  }}
+                >
+                  <DropdownMenuItem asChild>
+                    <button type="submit" className="w-full cursor-pointer">
+                      Sign out
+                    </button>
+                  </DropdownMenuItem>
+                </form>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/auth/signin" });
-            }}
-          >
-            <button
-              type="submit"
-              className="rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-sm font-medium text-[#1a1a1a] transition-all hover:bg-[#f5f5f5] dark:border-[#2a2a2a] dark:bg-[#1a1a1a] dark:text-white dark:hover:bg-[#2a2a2a]"
-            >
-              Sign out
-            </button>
-          </form>
-        </div>
-      </div>
+          {/* Mobile Menu */}
+          <div className="md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-64">
+                <div className="flex flex-col gap-6 pt-6">
+                  {/* User Info */}
+                  <div className="flex items-center gap-3 border-b pb-4">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={session.user.image || undefined} alt={session.user.name || ""} />
+                      <AvatarFallback>{userInitials}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{session.user.name}</span>
+                      {session.user.email && (
+                        <span className="text-xs text-muted-foreground">{session.user.email}</span>
+                      )}
+                    </div>
+                  </div>
 
-      {/* Mobile Navigation */}
-      <div className="border-t border-[#e5e5e5] px-6 py-3 dark:border-[#2a2a2a] md:hidden">
-        <div className="flex gap-6">
-          <Link
-            href="/transcripts"
-            className="text-sm font-medium text-[#666] transition-colors hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
-          >
-            Transcripts
-          </Link>
-          <Link
-            href="/calls"
-            className="text-sm font-medium text-[#666] transition-colors hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
-          >
-            Calls
-          </Link>
-          <Link
-            href="/analytics"
-            className="text-sm font-medium text-[#666] transition-colors hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
-          >
-            Analytics
-          </Link>
-          <Link
-            href="/compare"
-            className="text-sm font-medium text-[#666] transition-colors hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
-          >
-            Compare
-          </Link>
-          <Link
-            href="/playbooks"
-            className="text-sm font-medium text-[#666] transition-colors hover:text-[#ff6b35] dark:text-[#999] dark:hover:text-[#ff6b35]"
-          >
-            Playbooks
-          </Link>
+                  {/* Navigation Links */}
+                  <nav className="flex flex-col gap-3">
+                    {navLinks.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </nav>
+
+                  {/* Sign Out */}
+                  <form
+                    action={async () => {
+                      "use server";
+                      await signOut({ redirectTo: "/auth/signin" });
+                    }}
+                    className="mt-auto border-t pt-4"
+                  >
+                    <Button type="submit" variant="outline" className="w-full">
+                      Sign out
+                    </Button>
+                  </form>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
     </nav>

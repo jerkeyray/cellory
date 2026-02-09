@@ -2,11 +2,19 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Upload, CheckCircle2, XCircle, Loader2, FileAudio } from "lucide-react";
+import { toast } from "sonner";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface UploadFile {
   file: File;
   id: string;
-  status: "pending" | "uploading" | "processing" | "ready" | "error";
+  status: "pending" | "uploading" | "processing" | "ready" | "analyzing" | "complete" | "error";
   progress: number;
   transcriptId?: string;
   error?: string;
@@ -16,13 +24,14 @@ export default function BulkUploadForm() {
   const router = useRouter();
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [autoAnalyze, setAutoAnalyze] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
 
-  // Poll for processing files
+  // Poll for processing files and trigger auto-analysis
   useEffect(() => {
     const processingFiles = files.filter(
-      (f) => f.status === "processing" && f.transcriptId
+      (f) => (f.status === "processing" || f.status === "analyzing") && f.transcriptId
     );
 
     if (processingFiles.length === 0) return;
@@ -33,14 +42,74 @@ export default function BulkUploadForm() {
           const res = await fetch(`/api/transcripts/${uploadFile.transcriptId}`);
           if (res.ok) {
             const data = await res.json();
-            if (data.status === "ready") {
-              setFiles((prev) =>
-                prev.map((f) =>
-                  f.id === uploadFile.id
-                    ? { ...f, status: "ready", progress: 100 }
-                    : f
-                )
-              );
+
+            if (data.status === "ready" && uploadFile.status === "processing") {
+              // Transcription complete
+              if (autoAnalyze) {
+                // Auto-trigger analysis
+                setFiles((prev) =>
+                  prev.map((f) =>
+                    f.id === uploadFile.id
+                      ? { ...f, status: "analyzing", progress: 75 }
+                      : f
+                  )
+                );
+
+                toast.success("Transcription complete", {
+                  description: `Starting analysis for ${uploadFile.file.name}`,
+                });
+
+                // Trigger analysis
+                try {
+                  const analysisRes = await fetch("/api/calls", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ transcriptId: uploadFile.transcriptId }),
+                  });
+
+                  if (analysisRes.ok) {
+                    const analysisData = await analysisRes.json();
+                    setFiles((prev) =>
+                      prev.map((f) =>
+                        f.id === uploadFile.id
+                          ? { ...f, status: "complete", progress: 100 }
+                          : f
+                      )
+                    );
+                    toast.success("Analysis complete", {
+                      description: `${uploadFile.file.name} is ready`,
+                      action: {
+                        label: "View",
+                        onClick: () => router.push(`/calls/${analysisData.id}`),
+                      },
+                    });
+                  } else {
+                    throw new Error("Analysis failed");
+                  }
+                } catch (err) {
+                  setFiles((prev) =>
+                    prev.map((f) =>
+                      f.id === uploadFile.id
+                        ? { ...f, status: "ready", progress: 100 }
+                        : f
+                    )
+                  );
+                  toast.info("Transcription ready", {
+                    description: `${uploadFile.file.name} - analysis can be started manually`,
+                  });
+                }
+              } else {
+                setFiles((prev) =>
+                  prev.map((f) =>
+                    f.id === uploadFile.id
+                      ? { ...f, status: "ready", progress: 100 }
+                      : f
+                  )
+                );
+                toast.success("Transcription complete", {
+                  description: uploadFile.file.name,
+                });
+              }
             } else if (data.status === "error") {
               setFiles((prev) =>
                 prev.map((f) =>
@@ -49,6 +118,9 @@ export default function BulkUploadForm() {
                     : f
                 )
               );
+              toast.error("Transcription failed", {
+                description: uploadFile.file.name,
+              });
             }
           }
         } catch (err) {
@@ -58,7 +130,7 @@ export default function BulkUploadForm() {
     }, 5000);
 
     return () => clearInterval(pollInterval);
-  }, [files]);
+  }, [files, autoAnalyze, router]);
 
   const handleFiles = (newFiles: FileList | null) => {
     if (!newFiles || newFiles.length === 0) return;
@@ -113,6 +185,10 @@ export default function BulkUploadForm() {
         )
       );
 
+      toast.success("Upload successful", {
+        description: `Transcribing ${uploadFile.file.name}...`,
+      });
+
       router.refresh();
     } catch (err: any) {
       setFiles((prev) =>
@@ -126,6 +202,9 @@ export default function BulkUploadForm() {
             : f
         )
       );
+      toast.error("Upload failed", {
+        description: err.message || "Failed to upload file",
+      });
     }
   };
 
@@ -172,34 +251,42 @@ export default function BulkUploadForm() {
   };
 
   const clearCompleted = () => {
-    setFiles((prev) => prev.filter((f) => f.status !== "ready" && f.status !== "error"));
+    setFiles((prev) => prev.filter((f) => f.status !== "ready" && f.status !== "complete" && f.status !== "error"));
   };
 
   const getStatusIcon = (status: UploadFile["status"]) => {
     switch (status) {
       case "ready":
-        return (
-          <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        );
+      case "complete":
+        return <CheckCircle2 className="h-5 w-5 text-green-600" />;
       case "error":
-        return (
-          <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        );
+        return <XCircle className="h-5 w-5 text-destructive" />;
       case "uploading":
       case "processing":
-        return (
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#ff6b35] border-t-transparent" />
-        );
+      case "analyzing":
+        return <Loader2 className="h-5 w-5 animate-spin text-primary" />;
       default:
-        return (
-          <svg className="h-5 w-5 text-[#999]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-        );
+        return <FileAudio className="h-5 w-5 text-muted-foreground" />;
+    }
+  };
+
+  const getStatusText = (uploadFile: UploadFile) => {
+    const sizeMB = (uploadFile.file.size / 1024 / 1024).toFixed(2);
+    switch (uploadFile.status) {
+      case "uploading":
+        return `${sizeMB} MB • Uploading...`;
+      case "processing":
+        return `${sizeMB} MB • Transcribing...`;
+      case "analyzing":
+        return `${sizeMB} MB • Analyzing...`;
+      case "ready":
+        return `${sizeMB} MB • Transcription complete`;
+      case "complete":
+        return `${sizeMB} MB • Analysis complete`;
+      case "error":
+        return `${sizeMB} MB • ${uploadFile.error}`;
+      default:
+        return `${sizeMB} MB`;
     }
   };
 
@@ -214,30 +301,18 @@ export default function BulkUploadForm() {
         onClick={() => fileInputRef.current?.click()}
         className={`cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-all ${
           isDragging
-            ? "border-[#ff6b35] bg-[#fff5f2] dark:bg-[#1a0f0a]"
-            : "border-[#e5e5e5] hover:border-[#ff6b35] dark:border-[#2a2a2a]"
+            ? "border-primary bg-primary/5"
+            : "border-border hover:border-primary"
         }`}
       >
-        <svg
-          className="mx-auto h-12 w-12 text-[#999]"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-          />
-        </svg>
-        <h3 className="mt-4 text-lg font-semibold text-[#1a1a1a] dark:text-white">
+        <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+        <h3 className="mt-4 text-lg font-semibold text-foreground">
           {isDragging ? "Drop files here" : "Upload Audio Files"}
         </h3>
-        <p className="mt-2 text-sm text-[#666] dark:text-[#999]">
-          Drag and drop up to 10 audio files, or click to browse
+        <p className="mt-2 text-sm text-muted-foreground">
+          Drop up to 10 audio files here, or click to select
         </p>
-        <p className="mt-1 text-xs text-[#999]">
+        <p className="mt-1 text-xs text-muted-foreground">
           Supported formats: MP3, WAV, M4A (max 25MB each)
         </p>
         <input
@@ -250,78 +325,103 @@ export default function BulkUploadForm() {
         />
       </div>
 
+      {/* Auto-Analyze Toggle */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="auto-analyze" className="text-sm font-medium">
+                Auto-analyze after transcription
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Automatically start call analysis when transcription completes
+              </p>
+            </div>
+            <Switch
+              id="auto-analyze"
+              checked={autoAnalyze}
+              onCheckedChange={setAutoAnalyze}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Upload Queue */}
       {files.length > 0 && (
-        <div className="rounded-xl border border-[#e5e5e5] bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-[#1a1a1a] dark:text-white">
-              Upload Queue ({files.length})
-            </h3>
-            {files.some((f) => f.status === "ready" || f.status === "error") && (
-              <button
-                onClick={clearCompleted}
-                className="text-sm text-[#666] hover:text-[#ff6b35] dark:text-[#999]"
-              >
-                Clear completed
-              </button>
-            )}
-          </div>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Upload Queue</CardTitle>
+                <CardDescription>{files.length} file{files.length === 1 ? '' : 's'}</CardDescription>
+              </div>
+              {files.some((f) => f.status === "ready" || f.status === "complete" || f.status === "error") && (
+                <Button variant="ghost" size="sm" onClick={clearCompleted}>
+                  Clear completed
+                </Button>
+              )}
+            </div>
+          </CardHeader>
 
-          <div className="space-y-3">
+          <CardContent className="space-y-3">
             {files.map((uploadFile) => (
               <div
                 key={uploadFile.id}
-                className="flex items-center gap-4 rounded-lg border border-[#e5e5e5] p-4 dark:border-[#2a2a2a]"
+                className="flex items-center gap-4 rounded-lg border p-4"
               >
                 {/* Status Icon */}
                 <div className="flex-shrink-0">{getStatusIcon(uploadFile.status)}</div>
 
                 {/* File Info */}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-[#1a1a1a] dark:text-white">
+                  <p className="truncate text-sm font-medium">
                     {uploadFile.file.name}
                   </p>
-                  <p className="text-xs text-[#666] dark:text-[#999]">
-                    {(uploadFile.file.size / 1024 / 1024).toFixed(2)} MB
-                    {uploadFile.status === "uploading" && " • Uploading..."}
-                    {uploadFile.status === "processing" && " • Transcribing..."}
-                    {uploadFile.status === "ready" && " • Complete"}
-                    {uploadFile.status === "error" && ` • ${uploadFile.error}`}
+                  <p className="text-xs text-muted-foreground">
+                    {getStatusText(uploadFile)}
                   </p>
 
                   {/* Progress Bar */}
-                  {(uploadFile.status === "uploading" || uploadFile.status === "processing") && (
-                    <div className="mt-2 h-1 w-full rounded-full bg-[#f5f5f5] dark:bg-[#1a1a1a]">
-                      <div
-                        className="h-1 rounded-full bg-[#ff6b35] transition-all"
-                        style={{ width: `${uploadFile.progress}%` }}
-                      />
-                    </div>
+                  {(uploadFile.status === "uploading" ||
+                    uploadFile.status === "processing" ||
+                    uploadFile.status === "analyzing") && (
+                    <Progress value={uploadFile.progress} className="mt-2" />
                   )}
                 </div>
 
                 {/* Actions */}
                 <div className="flex-shrink-0">
-                  {uploadFile.status === "ready" && uploadFile.transcriptId ? (
-                    <button
+                  {uploadFile.status === "complete" && uploadFile.transcriptId ? (
+                    <Button
+                      variant="link"
+                      size="sm"
                       onClick={() => router.push(`/transcripts/${uploadFile.transcriptId}`)}
-                      className="text-sm text-[#ff6b35] hover:underline"
                     >
                       View
-                    </button>
+                    </Button>
+                  ) : uploadFile.status === "ready" && uploadFile.transcriptId ? (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={() => router.push(`/transcripts/${uploadFile.transcriptId}`)}
+                    >
+                      View
+                    </Button>
                   ) : uploadFile.status === "pending" || uploadFile.status === "error" ? (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => removeFile(uploadFile.id)}
-                      className="text-sm text-red-600 hover:underline dark:text-red-400"
+                      className="text-destructive hover:text-destructive"
                     >
                       Remove
-                    </button>
+                    </Button>
                   ) : null}
                 </div>
               </div>
             ))}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

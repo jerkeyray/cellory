@@ -7,11 +7,12 @@ import { prisma } from "@/app/lib/prisma";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const playbook = await prisma.playbook.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!playbook) {
@@ -37,13 +38,14 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { title, content } = await request.json();
 
     const playbook = await prisma.playbook.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!playbook) {
@@ -54,7 +56,7 @@ export async function PUT(
     }
 
     const updated = await prisma.playbook.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(title && { title }),
         ...(content && { content }),
@@ -77,11 +79,12 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const playbook = await prisma.playbook.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!playbook) {
@@ -92,7 +95,7 @@ export async function DELETE(
     }
 
     await prisma.playbook.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true });

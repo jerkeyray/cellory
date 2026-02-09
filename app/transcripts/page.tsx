@@ -1,6 +1,7 @@
 import { prisma } from "@/app/lib/prisma";
 import BulkUploadForm from "./BulkUploadForm";
 import TranscriptsClient from "./TranscriptsClient";
+import { PageHeader } from "@/components/page-header";
 
 export default async function TranscriptsPage() {
   // Fetch transcripts server-side
@@ -20,17 +21,12 @@ export default async function TranscriptsPage() {
   }));
 
   return (
-    <div className="min-h-[calc(100vh-73px)] bg-white dark:bg-[#0a0a0a]">
-      <div className="mx-auto max-w-7xl px-6 py-12">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#1a1a1a] dark:text-white">
-            Transcripts
-          </h1>
-          <p className="mt-2 text-sm text-[#666] dark:text-[#999]">
-            Upload and manage your call audio files - supports bulk upload of up to 10 files at once
-          </p>
-        </div>
+    <div className="min-h-[calc(100vh-73px)] bg-background">
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        <PageHeader
+          title="Transcripts"
+          description="Upload recordings and manage transcriptions"
+        />
 
         {/* Bulk Upload Form */}
         <div className="mb-8">

@@ -3,7 +3,22 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Upload, CheckCircle2, Clock, Trash2 } from "lucide-react";
 import BatchAnalysisBar from "./BatchAnalysisBar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { formatDate, formatDuration } from "@/lib/formatters";
 
 interface Transcript {
   id: string;
@@ -47,39 +62,17 @@ export default function TranscriptsClient({ transcripts }: TranscriptsClientProp
     setSelectedIds([]);
   };
 
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      processing: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-      ready: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      error: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-    };
-
-    return (
-      <span
-        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-          styles[status as keyof typeof styles] || ""
-        }`}
-      >
-        {status}
-      </span>
-    );
-  };
-
-  const formatDuration = (seconds: number | null) => {
-    if (!seconds) return "—";
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" => {
+    switch (status) {
+      case "processing":
+        return "default";
+      case "ready":
+        return "secondary";
+      case "error":
+        return "destructive";
+      default:
+        return "secondary";
+    }
   };
 
   const isAnalyzed = (transcript: Transcript) => transcript._count.calls > 0;
@@ -140,7 +133,7 @@ export default function TranscriptsClient({ transcripts }: TranscriptsClientProp
       {/* Bulk Actions */}
       {unanalyzedTranscripts.length > 0 && (
         <div className="mb-4 flex items-center justify-between">
-          <div className="text-sm text-[#666] dark:text-[#999]">
+          <div className="text-sm text-muted-foreground">
             {selectedIds.length > 0 ? (
               <>{selectedIds.length} selected</>
             ) : (
@@ -148,62 +141,43 @@ export default function TranscriptsClient({ transcripts }: TranscriptsClientProp
             )}
           </div>
           {unanalyzedTranscripts.length > 0 && selectedIds.length === 0 && (
-            <button
-              onClick={selectAll}
-              className="text-sm text-[#ff6b35] hover:underline"
-            >
+            <Button variant="link" size="sm" onClick={selectAll}>
               Select all unanalyzed
-            </button>
+            </Button>
           )}
         </div>
       )}
 
       {/* Transcripts List */}
       {transcripts.length === 0 ? (
-        <div className="rounded-2xl border border-[#e5e5e5] bg-white p-12 text-center dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-          <svg
-            className="mx-auto h-12 w-12 text-[#999]"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-            />
-          </svg>
-          <h3 className="mt-4 text-lg font-medium text-[#1a1a1a] dark:text-white">
-            No transcripts yet
-          </h3>
-          <p className="mt-2 text-sm text-[#666] dark:text-[#999]">
-            Upload your first audio file to get started
+        <Card className="p-12 text-center">
+          <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+          <h3 className="mt-4 text-lg font-medium">No recordings yet</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Upload your first call recording to get started
           </p>
-        </div>
+        </Card>
       ) : (
         <div className="grid gap-4">
           {transcripts.map((transcript) => (
-            <div
+            <Card
               key={transcript.id}
-              className={`group relative rounded-xl border bg-white transition-all hover:shadow-md dark:bg-[#0a0a0a] ${
+              className={`group relative transition-all hover:shadow-md ${
                 selectedIds.includes(transcript.id)
-                  ? "border-[#ff6b35] bg-[#fff5f2] dark:border-[#ff6b35] dark:bg-[#1a0f0a]"
-                  : "border-[#e5e5e5] hover:border-[#ff6b35] dark:border-[#2a2a2a] dark:hover:border-[#ff6b35]"
+                  ? "border-primary bg-primary/5"
+                  : "hover:border-primary"
               }`}
             >
               <div className="flex items-start gap-4 p-6">
-                {/* Checkbox - Improved UI */}
+                {/* Checkbox */}
                 {canSelect(transcript) && (
-                  <label className="flex-shrink-0 cursor-pointer pt-1">
-                    <input
-                      type="checkbox"
+                  <div className="flex-shrink-0 pt-1">
+                    <Checkbox
                       checked={selectedIds.includes(transcript.id)}
-                      onChange={() => toggleSelection(transcript.id)}
+                      onCheckedChange={() => toggleSelection(transcript.id)}
                       onClick={(e) => e.stopPropagation()}
-                      className="h-5 w-5 cursor-pointer rounded border-2 border-[#e5e5e5] text-[#ff6b35] transition-all hover:border-[#ff6b35] focus:ring-2 focus:ring-[#ff6b35] focus:ring-offset-2 dark:border-[#2a2a2a] dark:bg-[#0a0a0a] dark:hover:border-[#ff6b35]"
                     />
-                  </label>
+                  </div>
                 )}
 
                 {/* Content */}
@@ -214,48 +188,26 @@ export default function TranscriptsClient({ transcripts }: TranscriptsClientProp
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 flex-wrap">
-                        <h3 className="text-lg font-semibold text-[#1a1a1a] dark:text-white truncate">
+                        <h3 className="text-lg font-semibold truncate">
                           {transcript.filename}
                         </h3>
                         {isAnalyzed(transcript) && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-200">
-                            <svg
-                              className="h-3 w-3"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
+                          <Badge variant="secondary" className="gap-1">
+                            <CheckCircle2 className="h-3 w-3" />
                             Analyzed
-                          </span>
+                          </Badge>
                         )}
                         {!isAnalyzed(transcript) && transcript.status === "ready" && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-900 dark:text-orange-200">
-                            <svg
-                              className="h-3 w-3"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
+                          <Badge variant="outline" className="gap-1">
+                            <Clock className="h-3 w-3" />
                             Ready to analyze
-                          </span>
+                          </Badge>
                         )}
                       </div>
-                      <div className="mt-2 flex items-center gap-4 text-sm text-[#666] dark:text-[#999] flex-wrap">
-                        <span>{getStatusBadge(transcript.status)}</span>
+                      <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                        <Badge variant={getStatusBadgeVariant(transcript.status)}>
+                          {transcript.status}
+                        </Badge>
                         {transcript.durationSeconds && (
                           <span>Duration: {formatDuration(transcript.durationSeconds)}</span>
                         )}
@@ -270,85 +222,59 @@ export default function TranscriptsClient({ transcripts }: TranscriptsClientProp
                       </div>
                     </div>
                     <div className="flex items-center gap-4 flex-shrink-0">
-                      <div className="text-right text-sm text-[#999]">
+                      <div className="text-right text-sm text-muted-foreground">
                         {formatDate(transcript.createdAt)}
                       </div>
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={(e) => handleDelete(e, transcript.id)}
-                        className="opacity-0 transition-opacity group-hover:opacity-100 rounded-lg p-2 text-[#666] hover:bg-red-50 hover:text-red-600 dark:text-[#999] dark:hover:bg-red-950 dark:hover:text-red-400"
+                        className="opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:text-destructive"
                         title="Delete transcript"
                       >
-                        <svg
-                          className="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                      </button>
+                        <Trash2 className="h-5 w-5" />
+                      </Button>
                     </div>
                   </div>
                 </Link>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
 
-        {/* Delete Confirmation Modal */}
-        {deleteModalId && transcriptToDelete && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={cancelDelete}
-          >
-            <div
-              className="mx-4 w-full max-w-md rounded-xl border border-[#e5e5e5] bg-white p-6 shadow-xl dark:border-[#2a2a2a] dark:bg-[#0a0a0a]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-xl font-bold text-[#1a1a1a] dark:text-white">
-                Delete Transcript
-              </h3>
-              <p className="mt-2 text-sm text-[#666] dark:text-[#999]">
-                Are you sure you want to delete <strong>{transcriptToDelete.filename}</strong>?
-                {transcriptToDelete._count.calls > 0 && (
-                  <span className="mt-2 block text-red-600 dark:text-red-400">
-                    This will also delete {transcriptToDelete._count.calls} associated call
-                    {transcriptToDelete._count.calls === 1 ? "" : "s"}.
-                  </span>
-                )}
-              </p>
-
-              {deleteError && (
-                <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-                  {deleteError}
-                </div>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteModalId} onOpenChange={(open) => !open && cancelDelete()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Transcript</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>{transcriptToDelete?.filename}</strong>?
+              {transcriptToDelete && transcriptToDelete._count.calls > 0 && (
+                <span className="mt-2 block text-destructive">
+                  This will also delete {transcriptToDelete._count.calls} associated call
+                  {transcriptToDelete._count.calls === 1 ? "" : "s"}.
+                </span>
               )}
+            </DialogDescription>
+          </DialogHeader>
 
-              <div className="mt-6 flex gap-3">
-                <button
-                  onClick={cancelDelete}
-                  disabled={deleting}
-                  className="flex-1 rounded-lg border border-[#e5e5e5] px-4 py-2.5 text-sm font-medium text-[#1a1a1a] transition-colors hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#2a2a2a] dark:text-white dark:hover:bg-[#1a1a1a]"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  disabled={deleting}
-                  className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {deleting ? "Deleting..." : "Delete"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+          {deleteError && (
+            <Alert variant="destructive">
+              <AlertDescription>{deleteError}</AlertDescription>
+            </Alert>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={cancelDelete} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={deleting}>
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

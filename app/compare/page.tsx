@@ -105,7 +105,7 @@ export default async function ComparePage() {
 
   // Generate success-only insights if no failure data
   const successInsights = isSuccessOnlyMode
-    ? generateSuccessInsights(successAggregates as AggregateFeaturesV3[])
+    ? generateSuccessInsights(successAggregates as unknown as AggregateFeaturesV3[])
     : null;
 
   const insufficient = !hasSuccessData;
@@ -344,7 +344,7 @@ export default async function ComparePage() {
               </p>
 
               <div className="space-y-4">
-                {comparison.differentiators
+                {comparison?.differentiators
                   .filter((d) => d.significance > 0.1)
                   .slice(0, 10)
                   .map((diff, i) => (
@@ -406,33 +406,33 @@ export default async function ComparePage() {
                       <div className="flex justify-between">
                         <dt className="text-[#666] dark:text-[#999]">Constraints / Call</dt>
                         <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                          {(comparison.successProfile as any).avg_constraints_per_call.toFixed(1)}
+                          {(comparison?.successProfile as any).avg_constraints_per_call.toFixed(1)}
                         </dd>
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-[#666] dark:text-[#999]">Resolution Latency</dt>
                         <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                          {(comparison.successProfile as any).avg_resolution_latency !== null
-                            ? `${((comparison.successProfile as any).avg_resolution_latency).toFixed(1)}s`
+                          {(comparison?.successProfile as any).avg_resolution_latency !== null
+                            ? `${((comparison?.successProfile as any).avg_resolution_latency).toFixed(1)}s`
                             : "—"}
                         </dd>
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-[#666] dark:text-[#999]">Control Recovery Rate</dt>
                         <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                          {((comparison.successProfile as any).control_recovery_before_commitment_rate * 100).toFixed(0)}%
+                          {((comparison?.successProfile as any).control_recovery_before_commitment_rate * 100).toFixed(0)}%
                         </dd>
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-[#666] dark:text-[#999]">Unresolved Constraints</dt>
                         <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                          {(comparison.successProfile as any).avg_unresolved_constraints.toFixed(1)}
+                          {(comparison?.successProfile as any).avg_unresolved_constraints.toFixed(1)}
                         </dd>
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-[#666] dark:text-[#999]">Constraint Severity</dt>
                         <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                          {((comparison.successProfile as any).avg_constraint_severity * 100).toFixed(0)}%
+                          {((comparison?.successProfile as any).avg_constraint_severity * 100).toFixed(0)}%
                         </dd>
                       </div>
                     </>
@@ -442,25 +442,25 @@ export default async function ComparePage() {
                       <div className="flex justify-between">
                         <dt className="text-[#666] dark:text-[#999]">Avg Signals</dt>
                         <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                          {(comparison.successProfile as any).avgSignalCount.toFixed(1)}
+                          {(comparison?.successProfile as any).avgSignalCount.toFixed(1)}
                         </dd>
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-[#666] dark:text-[#999]">Signal Density</dt>
                         <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                          {(comparison.successProfile as any).avgSignalDensity.toFixed(2)} / min
+                          {(comparison?.successProfile as any).avgSignalDensity.toFixed(2)} / min
                         </dd>
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-[#666] dark:text-[#999]">Avg Confidence</dt>
                         <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                          {((comparison.successProfile as any).avgConfidence * 100).toFixed(0)}%
+                          {((comparison?.successProfile as any).avgConfidence * 100).toFixed(0)}%
                         </dd>
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-[#666] dark:text-[#999]">Early Signals</dt>
                         <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                          {((comparison.successProfile as any).earlySignalRatio * 100).toFixed(0)}%
+                          {((comparison?.successProfile as any).earlySignalRatio * 100).toFixed(0)}%
                         </dd>
                       </div>
                     </>
@@ -480,33 +480,33 @@ export default async function ComparePage() {
                       <div className="flex justify-between">
                         <dt className="text-[#666] dark:text-[#999]">Constraints / Call</dt>
                         <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                          {(comparison.failureProfile as any).avg_constraints_per_call.toFixed(1)}
+                          {(comparison?.failureProfile as any).avg_constraints_per_call.toFixed(1)}
                         </dd>
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-[#666] dark:text-[#999]">Resolution Latency</dt>
                         <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                          {(comparison.failureProfile as any).avg_resolution_latency !== null
-                            ? `${((comparison.failureProfile as any).avg_resolution_latency).toFixed(1)}s`
+                          {(comparison?.failureProfile as any).avg_resolution_latency !== null
+                            ? `${((comparison?.failureProfile as any).avg_resolution_latency).toFixed(1)}s`
                             : "—"}
                         </dd>
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-[#666] dark:text-[#999]">Control Recovery Rate</dt>
                         <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                          {((comparison.failureProfile as any).control_recovery_before_commitment_rate * 100).toFixed(0)}%
+                          {((comparison?.failureProfile as any).control_recovery_before_commitment_rate * 100).toFixed(0)}%
                         </dd>
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-[#666] dark:text-[#999]">Unresolved Constraints</dt>
                         <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                          {(comparison.failureProfile as any).avg_unresolved_constraints.toFixed(1)}
+                          {(comparison?.failureProfile as any).avg_unresolved_constraints.toFixed(1)}
                         </dd>
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-[#666] dark:text-[#999]">Constraint Severity</dt>
                         <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                          {((comparison.failureProfile as any).avg_constraint_severity * 100).toFixed(0)}%
+                          {((comparison?.failureProfile as any).avg_constraint_severity * 100).toFixed(0)}%
                         </dd>
                       </div>
                     </>
@@ -516,25 +516,25 @@ export default async function ComparePage() {
                       <div className="flex justify-between">
                         <dt className="text-[#666] dark:text-[#999]">Avg Signals</dt>
                         <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                          {(comparison.failureProfile as any).avgSignalCount.toFixed(1)}
+                          {(comparison?.failureProfile as any).avgSignalCount.toFixed(1)}
                         </dd>
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-[#666] dark:text-[#999]">Signal Density</dt>
                         <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                          {(comparison.failureProfile as any).avgSignalDensity.toFixed(2)} / min
+                          {(comparison?.failureProfile as any).avgSignalDensity.toFixed(2)} / min
                         </dd>
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-[#666] dark:text-[#999]">Avg Confidence</dt>
                         <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                          {((comparison.failureProfile as any).avgConfidence * 100).toFixed(0)}%
+                          {((comparison?.failureProfile as any).avgConfidence * 100).toFixed(0)}%
                         </dd>
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-[#666] dark:text-[#999]">Early Signals</dt>
                         <dd className="font-medium text-[#1a1a1a] dark:text-white">
-                          {((comparison.failureProfile as any).earlySignalRatio * 100).toFixed(0)}%
+                          {((comparison?.failureProfile as any).earlySignalRatio * 100).toFixed(0)}%
                         </dd>
                       </div>
                     </>

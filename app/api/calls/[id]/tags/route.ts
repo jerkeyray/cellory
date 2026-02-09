@@ -7,9 +7,10 @@ import { prisma } from "@/app/lib/prisma";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { name, color } = await request.json();
 
     if (!name) {
@@ -21,7 +22,7 @@ export async function POST(
 
     // Check if call exists
     const call = await prisma.call.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!call) {
@@ -31,7 +32,7 @@ export async function POST(
     // Check if tag already exists for this call
     const existingTag = await prisma.callTag.findFirst({
       where: {
-        callId: params.id,
+        callId: id,
         name,
       },
     });
@@ -46,7 +47,7 @@ export async function POST(
     // Create tag
     const tag = await prisma.callTag.create({
       data: {
-        callId: params.id,
+        callId: id,
         name,
         color: color || generateRandomColor(),
       },
@@ -68,11 +69,12 @@ export async function POST(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const tags = await prisma.callTag.findMany({
-      where: { callId: params.id },
+      where: { callId: id },
       orderBy: { createdAt: "asc" },
     });
 

@@ -1,5 +1,7 @@
 import { signIn, auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default async function SignInPage() {
   const session = await auth();
@@ -10,40 +12,34 @@ export default async function SignInPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white dark:bg-[#0a0a0a]">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background">
       <div className="w-full max-w-md space-y-8 px-6">
         {/* Logo/Brand */}
         <div className="text-center">
-          <h1 className="text-5xl font-bold tracking-tight text-[#1a1a1a] dark:text-white">
+          <h1 className="text-5xl font-bold tracking-tight text-foreground">
             Cellory
           </h1>
-          <p className="mt-3 text-lg text-[#666] dark:text-[#999]">
+          <p className="mt-3 text-lg text-muted-foreground">
             Financial Audio Intelligence
           </p>
         </div>
 
         {/* Sign-in Card */}
-        <div className="rounded-2xl border border-[#e5e5e5] bg-white p-8 shadow-sm dark:border-[#2a2a2a] dark:bg-[#0a0a0a]">
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-semibold text-[#1a1a1a] dark:text-white">
-                Sign in to continue
-              </h2>
-              <p className="mt-2 text-sm text-[#666] dark:text-[#999]">
-                Convert call recordings into structured intelligence
-              </p>
-            </div>
-
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Sign in to continue</CardTitle>
+            <CardDescription>
+              Convert call recordings into structured intelligence
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <form
               action={async () => {
                 "use server";
                 await signIn("google", { redirectTo: "/" });
               }}
             >
-              <button
-                type="submit"
-                className="flex w-full items-center justify-center gap-3 rounded-lg border border-[#e5e5e5] bg-white px-4 py-3 text-sm font-medium text-[#1a1a1a] transition-all hover:bg-[#f5f5f5] dark:border-[#2a2a2a] dark:bg-[#1a1a1a] dark:text-white dark:hover:bg-[#2a2a2a]"
-              >
+              <Button type="submit" variant="outline" className="w-full gap-3" size="lg">
                 <svg className="h-5 w-5" viewBox="0 0 24 24">
                   <path
                     fill="currentColor"
@@ -63,13 +59,13 @@ export default async function SignInPage() {
                   />
                 </svg>
                 Continue with Google
-              </button>
+              </Button>
             </form>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Footer */}
-        <p className="text-center text-xs text-[#999] dark:text-[#666]">
+        <p className="text-center text-xs text-muted-foreground">
           Built for Hotfoot AI Challenge 1: Financial Audio Intelligence
         </p>
       </div>

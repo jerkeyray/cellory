@@ -7,12 +7,14 @@ import { prisma } from "@/app/lib/prisma";
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; tagId: string } }
+  { params }: { params: Promise<{ id: string; tagId: string }> }
 ) {
   try {
+    const { id, tagId } = await params;
+
     // Check if tag exists
     const tag = await prisma.callTag.findUnique({
-      where: { id: params.tagId },
+      where: { id: tagId },
     });
 
     if (!tag) {
@@ -20,7 +22,7 @@ export async function DELETE(
     }
 
     // Verify tag belongs to the call
-    if (tag.callId !== params.id) {
+    if (tag.callId !== id) {
       return NextResponse.json(
         { error: "Tag does not belong to this call" },
         { status: 403 }
@@ -29,7 +31,7 @@ export async function DELETE(
 
     // Delete tag
     await prisma.callTag.delete({
-      where: { id: params.tagId },
+      where: { id: tagId },
     });
 
     return NextResponse.json({ success: true });

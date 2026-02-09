@@ -468,8 +468,8 @@ function computeDifferentiatorsV3(
   };
 
   // Resolution latency (lower is better)
-  const successLatencies = getFeatureValues(aggs => aggs, (a) => a.avg_resolution_latency);
-  const failureLatencies = getFeatureValues(aggs => aggs, (a) => a.avg_resolution_latency);
+  const successLatencies = getFeatureValues(successAggregates, (a) => a.avg_resolution_latency);
+  const failureLatencies = getFeatureValues(failureAggregates, (a) => a.avg_resolution_latency);
   if (successLatencies.length > 0 && failureLatencies.length > 0) {
     diffs.push({
       feature: "Avg Resolution Latency (seconds)",
