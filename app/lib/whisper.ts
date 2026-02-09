@@ -10,6 +10,8 @@
  * RECOMMENDATION: Use pre-transcribed text files instead of audio for most testing
  */
 
+import { WhisperSegment } from "./types/audio-intelligence";
+
 export interface TranscriptionResult {
   text: string;
   duration: number;
@@ -19,6 +21,7 @@ export interface TranscriptionResult {
     start: number;
     end: number;
   }>;
+  segments?: WhisperSegment[];
 }
 
 /**
@@ -38,6 +41,15 @@ export async function transcribeAudio(
     formData.append("model", "whisper-1");
     formData.append("response_format", "verbose_json");
     formData.append("timestamp_granularities[]", "word");
+    formData.append("timestamp_granularities[]", "segment");
+
+    // Financial domain vocabulary prompt (improves accuracy for collections terms)
+    formData.append("prompt",
+      "Financial collections call. Terms: FDCPA, mini-Miranda, past-due, " +
+      "delinquent, settlement, payment arrangement, charge-off, creditor, " +
+      "debtor, validation notice, cease and desist, hardship, forbearance, " +
+      "APR, principal, collection agency, statute of limitations, credit bureau"
+    );
 
     // Call OpenAI Whisper API directly (Vercel AI SDK doesn't have native Whisper support yet)
     const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
@@ -64,11 +76,22 @@ export async function transcribeAudio(
       end: w.end,
     }));
 
+    // Extract segment-level quality data
+    const segments: WhisperSegment[] | undefined = result.segments?.map((s: any) => ({
+      start: s.start,
+      end: s.end,
+      text: s.text,
+      avg_logprob: s.avg_logprob,
+      no_speech_prob: s.no_speech_prob,
+      compression_ratio: s.compression_ratio,
+    }));
+
     return {
       text: result.text,
       duration: result.duration || 0,
       language: result.language || "en",
       wordTimestamps,
+      segments,
     };
   } catch (error) {
     console.error("Transcription error:", error);

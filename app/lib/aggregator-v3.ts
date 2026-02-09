@@ -7,6 +7,7 @@
  */
 
 import { DecisionMarker } from "./signals-v3";
+import { NLUResults } from "./types/audio-intelligence";
 
 export interface AggregateFeaturesV3 {
   schemaVersion: 3;
@@ -35,6 +36,13 @@ export interface AggregateFeaturesV3 {
   commitment_after_unresolved_constraint: boolean;
   avg_time_from_last_constraint: number | null;
 
+  // NLU
+  intent_distribution: Record<string, number>;
+  obligation_count: number;
+  obligations_with_deadlines: number;
+  regulatory_compliance_score: number;
+  entity_count: number;
+
   // Auxiliary
   predicted_outcome: string | null;
   outcome_confidence: number | null;
@@ -47,10 +55,11 @@ export interface AggregateFeaturesV3 {
  */
 export function aggregateSignalsV3(
   markers: DecisionMarker[],
-  auxiliaryMetrics: { predicted_outcome: string | null; outcome_confidence: number | null; call_tone: string | null }
+  auxiliaryMetrics: { predicted_outcome: string | null; outcome_confidence: number | null; call_tone: string | null },
+  nluResults?: NLUResults
 ): AggregateFeaturesV3 {
   if (markers.length === 0) {
-    return emptyFeaturesV3(auxiliaryMetrics);
+    return emptyFeaturesV3(auxiliaryMetrics, nluResults);
   }
 
   const sorted = [...markers].sort((a, b) => a.time - b.time);
@@ -158,6 +167,45 @@ export function aggregateSignalsV3(
     }
   }
 
+  // --- NLU ---
+  const intent_distribution: Record<string, number> = {};
+  let obligation_count = 0;
+  let obligations_with_deadlines = 0;
+  let regulatory_compliance_score = 0;
+  let entity_count = 0;
+
+  if (nluResults) {
+    // Intent distribution
+    for (const intent of nluResults.intents) {
+      intent_distribution[intent.intent] =
+        (intent_distribution[intent.intent] || 0) + 1;
+    }
+
+    // Obligation metrics
+    obligation_count = nluResults.obligations.length;
+    obligations_with_deadlines = nluResults.obligations.filter(
+      (o) => o.deadline !== null
+    ).length;
+
+    // Regulatory compliance score
+    // Expected phrases for collections calls
+    const expectedRegTypes = [
+      "mini_miranda",
+      "fdcpa_disclosure",
+      "recording_notice",
+    ];
+    const presentCount = expectedRegTypes.filter((type) =>
+      nluResults.regulatory_phrases.some(
+        (p) => p.regulation_type === type && p.present
+      )
+    ).length;
+    regulatory_compliance_score =
+      expectedRegTypes.length > 0 ? presentCount / expectedRegTypes.length : 0;
+
+    // Entity count
+    entity_count = nluResults.entities.length;
+  }
+
   return {
     schemaVersion: 3,
 
@@ -181,6 +229,12 @@ export function aggregateSignalsV3(
     commitment_after_unresolved_constraint,
     avg_time_from_last_constraint,
 
+    intent_distribution,
+    obligation_count,
+    obligations_with_deadlines,
+    regulatory_compliance_score,
+    entity_count,
+
     predicted_outcome: auxiliaryMetrics.predicted_outcome,
     outcome_confidence: auxiliaryMetrics.outcome_confidence,
     call_tone: auxiliaryMetrics.call_tone,
@@ -191,7 +245,8 @@ export function aggregateSignalsV3(
  * Empty features for calls with no markers
  */
 function emptyFeaturesV3(
-  auxiliaryMetrics: { predicted_outcome: string | null; outcome_confidence: number | null; call_tone: string | null }
+  auxiliaryMetrics: { predicted_outcome: string | null; outcome_confidence: number | null; call_tone: string | null },
+  nluResults?: NLUResults
 ): AggregateFeaturesV3 {
   return {
     schemaVersion: 3,
@@ -215,6 +270,12 @@ function emptyFeaturesV3(
     commitment_types: {},
     commitment_after_unresolved_constraint: false,
     avg_time_from_last_constraint: null,
+
+    intent_distribution: {},
+    obligation_count: 0,
+    obligations_with_deadlines: 0,
+    regulatory_compliance_score: 0,
+    entity_count: 0,
 
     predicted_outcome: auxiliaryMetrics.predicted_outcome,
     outcome_confidence: auxiliaryMetrics.outcome_confidence,

@@ -11,6 +11,10 @@ import { extractMarkersBatchV3, mergeExtractionResultsV3 } from "./signals-v3";
 import { aggregateSignalsV3 } from "./aggregator-v3";
 import { invalidateComparisonCache } from "./comparison-cache";
 import { sendToBackboard } from "./backboard";
+import {
+  extractNLUMarkersBatch,
+  mergeNLUResults,
+} from "./nlu-extraction";
 
 export interface PipelineResult {
   callId: string;
@@ -76,6 +80,18 @@ export async function processCall(callId: string): Promise<PipelineResult> {
       });
     }
 
+    // Step 2.5: Extract NLU markers (intents, obligations, regulatory, entities)
+    console.log(`[${callId}] Extracting NLU markers...`);
+    const nluResults = await extractNLUMarkersBatch(chunks);
+    const mergedNLU = mergeNLUResults(nluResults);
+
+    console.log(
+      `[${callId}] Extracted NLU: ${mergedNLU.intents.length} intents, ` +
+        `${mergedNLU.obligations.length} obligations, ` +
+        `${mergedNLU.regulatory_phrases.length} regulatory, ` +
+        `${mergedNLU.entities.length} entities`
+    );
+
     // Step 3: Persist markers (single time field maps to both startTime/endTime for DB compat)
     await prisma.callSignal.createMany({
       data: merged.markers.map((marker) => ({
@@ -89,6 +105,73 @@ export async function processCall(callId: string): Promise<PipelineResult> {
       })),
     });
 
+    // Persist NLU markers as CallSignal records
+    const nluSignals: any[] = [];
+
+    // Intents
+    mergedNLU.intents.forEach((intent) => {
+      nluSignals.push({
+        callId,
+        chunkIndex: Math.floor(intent.time / 75),
+        signalType: "intent_classification",
+        signalData: intent,
+        confidence: intent.confidence,
+        startTime: intent.time,
+        endTime: intent.time,
+      });
+    });
+
+    // Obligations
+    mergedNLU.obligations.forEach((obligation) => {
+      nluSignals.push({
+        callId,
+        chunkIndex: Math.floor(obligation.time / 75),
+        signalType: "obligation_detection",
+        signalData: obligation,
+        confidence: obligation.confidence,
+        startTime: obligation.time,
+        endTime: obligation.time,
+      });
+    });
+
+    // Regulatory phrases
+    mergedNLU.regulatory_phrases.forEach((phrase) => {
+      nluSignals.push({
+        callId,
+        chunkIndex: 0, // Regulatory phrases are call-level
+        signalType: "regulatory_phrase",
+        signalData: phrase,
+        confidence: phrase.confidence,
+        startTime: phrase.time || 0,
+        endTime: phrase.time || 0,
+      });
+    });
+
+    // Entities
+    mergedNLU.entities.forEach((entity) => {
+      nluSignals.push({
+        callId,
+        chunkIndex: Math.floor(entity.time / 75),
+        signalType: "entity_mention",
+        signalData: entity,
+        confidence: entity.confidence,
+        startTime: entity.time,
+        endTime: entity.time,
+      });
+    });
+
+    if (nluSignals.length > 0) {
+      await prisma.callSignal.createMany({
+        data: nluSignals,
+      });
+    }
+
+    // Store merged NLU on transcript for quick access
+    await prisma.transcript.update({
+      where: { id: call.transcriptId },
+      data: { nluResults: mergedNLU as any },
+    });
+
     // Store auxiliary metrics
     const auxiliaryMetrics = merged.auxiliary_metrics;
 
@@ -100,11 +183,15 @@ export async function processCall(callId: string): Promise<PipelineResult> {
 
     // Step 4: Aggregate markers (pure computation, $0)
     console.log(`[${callId}] Aggregating v3 markers...`);
-    const aggregates = aggregateSignalsV3(merged.markers, {
-      predicted_outcome: auxiliaryMetrics.predicted_outcome,
-      outcome_confidence: auxiliaryMetrics.outcome_confidence,
-      call_tone: auxiliaryMetrics.call_tone,
-    });
+    const aggregates = aggregateSignalsV3(
+      merged.markers,
+      {
+        predicted_outcome: auxiliaryMetrics.predicted_outcome,
+        outcome_confidence: auxiliaryMetrics.outcome_confidence,
+        call_tone: auxiliaryMetrics.call_tone,
+      },
+      mergedNLU
+    );
 
     // Step 5: Persist aggregates with schemaVersion: 3
     await prisma.callAggregate.create({

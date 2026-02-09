@@ -5,6 +5,10 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import TagsSection from "./TagsSection";
 import NotesSection from "./NotesSection";
+import AudioQualityBadge from "@/app/components/AudioQualityBadge";
+import DiarizationTimeline from "@/app/components/DiarizationTimeline";
+import NLUInsightsCard from "@/app/components/NLUInsightsCard";
+import { DiarizationSegment, NLUResults, WhisperSegment } from "@/app/lib/types/audio-intelligence";
 
 interface Signal {
   id: string;
@@ -31,6 +35,17 @@ interface Call {
     filename: string;
     content: string;
     durationSeconds: number | null;
+    qualityScore: number | null;
+    audioFormat: string | null;
+    audioSampleRate: number | null;
+    audioChannels: number | null;
+    audioBitrate: number | null;
+    speechRatio: number | null;
+    avgConfidence: number | null;
+    diarizationSegments: any | null;
+    speakerCount: number | null;
+    nluResults: any | null;
+    whisperSegments: any | null;
   };
   signals: Signal[];
   aggregates: Aggregate[];
@@ -229,11 +244,21 @@ export default function CallDetailPage() {
 
           <div className="mt-4 flex items-start justify-between">
             <div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <span className={`text-lg font-semibold ${call.outcome === "success" ? "text-green-600" : "text-red-600"}`}>
                   {call.outcome === "success" ? "Success" : "Failure"}
                 </span>
                 {getStatusBadge(call.status)}
+                {call.transcript.qualityScore !== null && call.transcript.qualityScore !== undefined && (
+                  <AudioQualityBadge
+                    qualityScore={call.transcript.qualityScore}
+                    flags={
+                      call.transcript.whisperSegments
+                        ? ([] as any[]) // Flags would be computed from segments if needed
+                        : []
+                    }
+                  />
+                )}
               </div>
               <h1 className="mt-2 text-3xl font-bold text-foreground">
                 {call.transcript.filename}
@@ -269,114 +294,119 @@ export default function CallDetailPage() {
                   {call.status === "complete" ? "No markers detected" : "Processing..."}
                 </p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {call.signals.map((marker) => {
                     const data = marker.signalData as any;
                     return (
                       <div
                         key={marker.id}
-                        className="flex items-start gap-3 rounded-lg border border p-3"
+                        className="rounded-lg border border bg-gray-50/50 p-3 hover:bg-gray-50 transition-colors"
                       >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${getMarkerColor(marker.signalType)}`}>
+                        {/* Header Row */}
+                        <div className="flex items-center justify-between gap-3 mb-1.5">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${getMarkerColor(marker.signalType)}`}>
                               {marker.signalType.replace(/_/g, " ")}
                             </span>
-
-                            {/* V3 marker rendering */}
-                            {isV3 && marker.signalType === "customer_constraint" && (
-                              <>
-                                <span className="text-xs text-muted-foreground">
-                                  {data.constraint_type}
-                                </span>
-                                <span className={`text-xs ${data.explicit ? "text-orange-600" : "text-muted-foreground"}`}>
-                                  {data.explicit ? "explicit" : "implicit"}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  severity: {(data.severity * 100).toFixed(0)}%
-                                </span>
-                              </>
-                            )}
-                            {isV3 && marker.signalType === "agent_response_strategy" && (
-                              <>
-                                <span className="text-xs text-muted-foreground">
-                                  {data.strategy.replace(/_/g, " ")}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  targets: {data.target_constraint}
-                                </span>
-                              </>
-                            )}
-                            {isV3 && marker.signalType === "control_dynamics" && (
-                              <>
-                                <span className="text-xs text-muted-foreground">
-                                  {data.event.replace(/_/g, " ")}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  cause: {data.cause}
-                                </span>
-                              </>
-                            )}
-                            {isV3 && marker.signalType === "commitment_quality" && (
-                              <>
-                                <span className="text-xs text-muted-foreground">
-                                  {data.commitment_type}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  by: {data.initiated_by}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  reversibility: {data.reversibility}
-                                </span>
-                                {data.time_from_last_constraint >= 0 && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {data.time_from_last_constraint.toFixed(0)}s after constraint
-                                  </span>
-                                )}
-                              </>
-                            )}
-
-                            {/* V2 marker rendering */}
-                            {!isV3 && data.subtype && (
-                              <span className="text-xs text-muted-foreground">
-                                {data.subtype.replace(/_/g, " ")}
-                              </span>
-                            )}
-                            {!isV3 && data.blockerType && (
-                              <span className="text-xs text-muted-foreground">
-                                {data.blockerType.replace(/_/g, " ")}
-                                {data.resolved && " ✓ resolved"}
-                              </span>
-                            )}
-                            {!isV3 && data.strategy && (
-                              <span className="text-xs text-muted-foreground">
-                                strategy: {data.strategy}
-                              </span>
-                            )}
-                            {!isV3 && data.controller && (
-                              <span className="text-xs text-muted-foreground">
-                                {data.controller} control ({data.reason})
-                              </span>
-                            )}
-                            {!isV3 && data.stallType && (
-                              <span className="text-xs text-muted-foreground">
-                                {data.stallType.replace(/_/g, " ")}
-                              </span>
-                            )}
-
-                            {/* Common fields */}
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">
                               {isV3 && data.time !== undefined
                                 ? formatTime(data.time)
-                                : `${formatTime(marker.startTime)} - ${formatTime(marker.endTime)}`}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {Math.round(marker.confidence * 100)}%
+                                : `${formatTime(marker.startTime)}`}
                             </span>
                           </div>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {data.description}
-                          </p>
+                          <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                            {Math.round(marker.confidence * 100)}%
+                          </span>
+                        </div>
+
+                        {/* Description */}
+                        <p className="text-sm text-foreground mb-2">
+                          {data.description}
+                        </p>
+
+                        {/* Metadata Row */}
+                        <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground">
+                          {/* V3 marker metadata */}
+                          {isV3 && marker.signalType === "customer_constraint" && (
+                            <>
+                              <span className="font-medium">{data.constraint_type}</span>
+                              <span className={data.explicit ? "text-orange-600 font-medium" : ""}>
+                                {data.explicit ? "explicit" : "implicit"}
+                              </span>
+                              <span>severity: {(data.severity * 100).toFixed(0)}%</span>
+                            </>
+                          )}
+                          {isV3 && marker.signalType === "agent_response_strategy" && (
+                            <>
+                              <span className="font-medium">{data.strategy.replace(/_/g, " ")}</span>
+                              <span>→ {data.target_constraint}</span>
+                            </>
+                          )}
+                          {isV3 && marker.signalType === "control_dynamics" && (
+                            <>
+                              <span className="font-medium">{data.event.replace(/_/g, " ")}</span>
+                              <span>• {data.cause}</span>
+                            </>
+                          )}
+                          {isV3 && marker.signalType === "commitment_quality" && (
+                            <>
+                              <span className="font-medium">{data.commitment_type}</span>
+                              <span>by {data.initiated_by}</span>
+                              <span>reversibility: {data.reversibility}</span>
+                              {data.time_from_last_constraint >= 0 && (
+                                <span>{data.time_from_last_constraint.toFixed(0)}s after constraint</span>
+                              )}
+                            </>
+                          )}
+
+                          {/* NLU marker metadata */}
+                          {marker.signalType === "intent_classification" && (
+                            <>
+                              <span className="font-medium">{data.intent?.replace(/_/g, " ")}</span>
+                              <span>{data.speaker}</span>
+                            </>
+                          )}
+                          {marker.signalType === "obligation_detection" && (
+                            <>
+                              <span className="font-medium">{data.obligation_type?.replace(/_/g, " ")}</span>
+                              <span>by {data.obligor}</span>
+                              {data.deadline && <span className="text-orange-600 font-medium">due: {data.deadline}</span>}
+                            </>
+                          )}
+                          {marker.signalType === "regulatory_phrase" && (
+                            <>
+                              <span className="font-medium">{data.regulation_type?.replace(/_/g, " ")}</span>
+                              <span className={data.present ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                                {data.present ? "✓ present" : "✗ missing"}
+                              </span>
+                            </>
+                          )}
+                          {marker.signalType === "entity_mention" && (
+                            <>
+                              <span className="font-medium">{data.entity_type?.replace(/_/g, " ")}</span>
+                              <span className="font-mono text-foreground">{data.value}</span>
+                            </>
+                          )}
+
+                          {/* V2 marker metadata */}
+                          {!isV3 && data.subtype && (
+                            <span className="font-medium">{data.subtype.replace(/_/g, " ")}</span>
+                          )}
+                          {!isV3 && data.blockerType && (
+                            <>
+                              <span className="font-medium">{data.blockerType.replace(/_/g, " ")}</span>
+                              {data.resolved && <span className="text-green-600 font-medium">✓ resolved</span>}
+                            </>
+                          )}
+                          {!isV3 && data.strategy && (
+                            <span>{data.strategy}</span>
+                          )}
+                          {!isV3 && data.controller && (
+                            <span>{data.controller} control ({data.reason})</span>
+                          )}
+                          {!isV3 && data.stallType && (
+                            <span className="font-medium">{data.stallType.replace(/_/g, " ")}</span>
+                          )}
                         </div>
                       </div>
                     );
@@ -390,20 +420,33 @@ export default function CallDetailPage() {
               <h2 className="mb-4 text-lg font-semibold text-foreground">
                 Transcript
               </h2>
+
+              {/* Diarization Timeline */}
+              {call.transcript.diarizationSegments && call.transcript.durationSeconds && (
+                <div className="mb-6">
+                  <DiarizationTimeline
+                    segments={call.transcript.diarizationSegments as DiarizationSegment[]}
+                    totalDuration={call.transcript.durationSeconds}
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
                 {transcriptLines.map((line: any) => (
                   <div
                     key={line.index}
-                    className="flex gap-3 py-2"
+                    className="flex gap-4 py-2"
                   >
-                    <div className="flex-shrink-0 w-16 text-xs text-muted-foreground font-mono pt-0.5">
+                    <div className="flex-shrink-0 w-14 text-xs text-muted-foreground font-mono">
                       {line.timestamp}
                     </div>
-                    <div className="flex-1">
-                      <span className="text-xs font-medium text-muted-foreground">
+                    <div className="flex-shrink-0 w-20">
+                      <span className={`text-xs font-medium ${line.isAgent ? 'text-blue-600' : 'text-orange-600'}`}>
                         {line.isAgent ? 'Agent' : 'Customer'}
                       </span>
-                      <p className="mt-1 text-sm text-foreground">
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-foreground">
                         {line.text}
                       </p>
                     </div>
@@ -439,6 +482,38 @@ export default function CallDetailPage() {
                   <dt className="text-muted-foreground">Status</dt>
                   <dd className="mt-1">{getStatusBadge(call.status)}</dd>
                 </div>
+                {call.transcript.audioFormat && (
+                  <div>
+                    <dt className="text-muted-foreground">Audio Format</dt>
+                    <dd className="mt-1 font-medium text-foreground">
+                      {call.transcript.audioFormat}
+                    </dd>
+                  </div>
+                )}
+                {call.transcript.audioSampleRate && (
+                  <div>
+                    <dt className="text-muted-foreground">Sample Rate</dt>
+                    <dd className="mt-1 font-medium text-foreground">
+                      {(call.transcript.audioSampleRate / 1000).toFixed(1)} kHz
+                    </dd>
+                  </div>
+                )}
+                {call.transcript.audioChannels && (
+                  <div>
+                    <dt className="text-muted-foreground">Channels</dt>
+                    <dd className="mt-1 font-medium text-foreground">
+                      {call.transcript.audioChannels === 1 ? "Mono" : call.transcript.audioChannels === 2 ? "Stereo" : call.transcript.audioChannels}
+                    </dd>
+                  </div>
+                )}
+                {call.transcript.speechRatio !== null && call.transcript.speechRatio !== undefined && (
+                  <div>
+                    <dt className="text-muted-foreground">Speech Ratio</dt>
+                    <dd className="mt-1 font-medium text-foreground">
+                      {Math.round(call.transcript.speechRatio * 100)}%
+                    </dd>
+                  </div>
+                )}
               </dl>
             </div>
 
@@ -574,6 +649,11 @@ export default function CallDetailPage() {
                   )}
                 </dl>
               </div>
+            )}
+
+            {/* NLU Insights */}
+            {call.transcript.nluResults && (
+              <NLUInsightsCard nluResults={call.transcript.nluResults as NLUResults} />
             )}
 
             {/* Tags */}

@@ -21,6 +21,7 @@ export default async function CallsPage() {
         select: {
           filename: true,
           durationSeconds: true,
+          qualityScore: true,
         },
       },
       tags: {
