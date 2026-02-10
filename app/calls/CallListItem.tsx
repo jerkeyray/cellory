@@ -30,8 +30,7 @@ function getStatusBadge(status: string) {
   const styles = {
     pending: "bg-gray-100 text-gray-800",
     extracting: "bg-blue-100 text-blue-800",
-    aggregating:
-      "bg-purple-100 text-purple-800",
+    aggregating: "bg-purple-100 text-purple-800",
     complete: "bg-green-100 text-green-800",
     error: "bg-red-100 text-red-800",
   };
@@ -68,12 +67,15 @@ function getQualityDot(qualityScore: number | null) {
     qualityScore >= 0.7
       ? "bg-green-500"
       : qualityScore >= 0.4
-      ? "bg-yellow-500"
-      : "bg-red-500";
+        ? "bg-yellow-500"
+        : "bg-red-500";
 
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className={`h-2 w-2 rounded-full ${color}`} title={`Quality: ${Math.round(qualityScore * 100)}%`} />
+      <span
+        className={`h-2 w-2 rounded-full ${color}`}
+        title={`Quality: ${Math.round(qualityScore * 100)}%`}
+      />
     </span>
   );
 }
@@ -132,7 +134,7 @@ export default function CallListItem({ call }: CallListItemProps) {
 
   return (
     <>
-      <div className="group relative rounded-xl border border bg-white p-6 transition-all hover:border-[#ff6b35] hover:shadow-md">
+      <div className="group relative rounded-xl border bg-white p-6 transition-all hover:border-[#ff6b35] hover:shadow-md">
         <Link href={`/calls/${call.id}`} className="block">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -148,8 +150,8 @@ export default function CallListItem({ call }: CallListItemProps) {
                 <span>Signals: {call._count.signals}</span>
                 {call.transcript.durationSeconds && (
                   <span>
-                    Duration:{" "}
-                    {Math.floor(call.transcript.durationSeconds / 60)}:
+                    Duration: {Math.floor(call.transcript.durationSeconds / 60)}
+                    :
                     {(call.transcript.durationSeconds % 60)
                       .toString()
                       .padStart(2, "0")}

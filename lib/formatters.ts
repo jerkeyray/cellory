@@ -19,15 +19,22 @@ export function formatDate(date: Date | string): string {
 }
 
 /**
- * Formats duration in seconds to MM:SS format
+ * Formats duration in seconds to human-readable format with labels
  * @param seconds - Duration in seconds
- * @returns Formatted duration string (e.g., "5:30")
+ * @returns Formatted duration string (e.g., "5 min 30 secs")
  */
 export function formatDuration(seconds: number | null): string {
   if (!seconds) return "—";
   const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
+  const secs = Math.floor(seconds % 60);
+  
+  if (mins === 0) {
+    return `${secs} secs`;
+  } else if (secs === 0) {
+    return `${mins} min`;
+  } else {
+    return `${mins} min ${secs} secs`;
+  }
 }
 
 /**
@@ -109,8 +116,9 @@ export function getOutcomeBadgeVariant(
  * @param outcome - Outcome string ("success" or "failure")
  * @returns Display text
  */
-export function getOutcomeText(outcome: string): string {
-  return outcome === "success" ? "Success" : "Failure";
+export function getOutcomeText(outcome: string | null | undefined): string {
+  if (!outcome) return "Unknown";
+  return outcome.charAt(0).toUpperCase() + outcome.slice(1);
 }
 
 /**
@@ -132,4 +140,31 @@ export function formatMarkerType(type: string): string {
     .split("_")
     .map(capitalize)
     .join(" ");
+}
+
+/**
+ * Returns a relative time string from a date
+ * @param date - Date object or ISO string
+ * @returns Relative time string (e.g., "2 hours ago", "just now")
+ */
+export function formatRelativeTime(date: Date | string): string {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  const now = new Date();
+  const diffMs = now.getTime() - dateObj.getTime();
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  const diffWeeks = Math.floor(diffDays / 7);
+  const diffMonths = Math.floor(diffDays / 30);
+  const diffYears = Math.floor(diffDays / 365);
+
+  if (diffSeconds < 10) return "just now";
+  if (diffSeconds < 60) return `${diffSeconds}s ago`;
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffWeeks < 4) return `${diffWeeks}w ago`;
+  if (diffMonths < 12) return `${diffMonths}mo ago`;
+  return `${diffYears}y ago`;
 }

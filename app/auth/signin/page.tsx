@@ -1,7 +1,8 @@
 import { signIn, auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import CelloryLogo from "@/app/components/CelloryLogo";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Atom01Icon } from "@hugeicons/core-free-icons";
 
 export default async function SignInPage() {
   const session = await auth();
@@ -12,49 +13,75 @@ export default async function SignInPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#F2F2F2] overflow-hidden">
-      {/* Diagonal Cross Grid Background - Top Right */}
+    <div className="min-h-screen w-full bg-white relative">
+      {/* Dashed Top Fade Grid */}
       <div
-        className="absolute top-0 right-0 w-full pointer-events-none z-0"
+        className="absolute inset-0 z-0"
         style={{
-          height: "600px",
           backgroundImage: `
-            linear-gradient(45deg, transparent 49%, #e5e7eb 49%, #e5e7eb 51%, transparent 51%),
-            linear-gradient(-45deg, transparent 49%, #e5e7eb 49%, #e5e7eb 51%, transparent 51%)
+            linear-gradient(to right, #e7e5e4 1px, transparent 1px),
+            linear-gradient(to bottom, #e7e5e4 1px, transparent 1px)
           `,
-          backgroundSize: "40px 40px",
-          WebkitMaskImage:
-            "radial-gradient(ellipse 80% 80% at 100% 0%, #000 50%, transparent 90%)",
-          maskImage:
-            "radial-gradient(ellipse 80% 80% at 100% 0%, #000 50%, transparent 90%)",
+          backgroundSize: "20px 20px",
+          backgroundPosition: "0 0, 0 0",
+          maskImage: `
+            repeating-linear-gradient(
+              to right,
+              black 0px,
+              black 3px,
+              transparent 3px,
+              transparent 8px
+            ),
+            repeating-linear-gradient(
+              to bottom,
+              black 0px,
+              black 3px,
+              transparent 3px,
+              transparent 8px
+            ),
+            radial-gradient(ellipse 70% 60% at 50% 0%, #000 60%, transparent 100%)
+          `,
+          WebkitMaskImage: `
+            repeating-linear-gradient(
+              to right,
+              black 0px,
+              black 3px,
+              transparent 3px,
+              transparent 8px
+            ),
+            repeating-linear-gradient(
+              to bottom,
+              black 0px,
+              black 3px,
+              transparent 3px,
+              transparent 8px
+            ),
+            radial-gradient(ellipse 70% 60% at 50% 0%, #000 60%, transparent 100%)
+          `,
+          maskComposite: "intersect",
+          WebkitMaskComposite: "source-in",
         }}
       />
 
-      {/* Bottom Left Accent */}
-      <div
-        className="absolute bottom-0 left-0 w-96 h-96 pointer-events-none z-0 opacity-20"
-        style={{
-          background: "radial-gradient(circle at center, #ff6b35 0%, transparent 70%)",
-          filter: "blur(60px)",
-        }}
-      />
-
-      <div className="relative z-10 w-full max-w-lg px-6">
-        {/* Brand */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center rounded-full bg-white/85 px-5 py-2.5 shadow-sm ring-1 ring-stone-200">
-            <CelloryLogo textClassName="text-2xl" />
-          </div>
-        </div>
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center w-full max-w-lg mx-auto px-6 pt-8">
 
         {/* Sign-in Card */}
         <div className="relative">
           {/* Card glow effect */}
           <div className="absolute -inset-1 bg-gradient-to-r from-[#ff6b35]/20 to-[#ea580c]/20 rounded-3xl blur-lg opacity-30"></div>
 
-          <div className="relative bg-white rounded-3xl border border-stone-200 shadow-2xl p-10">
+          <div className="relative bg-white rounded-3xl border border-stone-200 p-10">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-foreground mb-3">Welcome back</h2>
+              {/* Logo Icon Above Text */}
+              <div className="flex justify-center mb-4">
+                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-stone-200">
+                  <HugeiconsIcon icon={Atom01Icon} size={24} color="#78716c" strokeWidth={1.5} />
+                </div>
+              </div>
+              
+              <h2 className="text-3xl font-semibold text-foreground mb-1">Welcome back to</h2>
+              <h1 className="text-3xl font-bold text-foreground mb-3">Cellory</h1>
+              
               <p className="text-muted-foreground">
                 Sign in to convert your call recordings into structured intelligence
               </p>
@@ -69,7 +96,7 @@ export default async function SignInPage() {
               <Button
                 type="submit"
                 variant="outline"
-                className="w-full gap-3 h-14 rounded-full bg-white border-2 border-stone-200 hover:border-stone-300 hover:bg-stone-50 transition-all shadow-sm hover:shadow-md text-base font-medium"
+                className="w-full gap-3 h-14 rounded-full text-base font-medium"
                 size="lg"
               >
                 {/* Colorful Google G Logo */}
@@ -100,11 +127,6 @@ export default async function SignInPage() {
             </form>
           </div>
         </div>
-
-        {/* Footer */}
-        <p className="text-center text-sm text-muted-foreground mt-8">
-          By signing in, you agree to our Terms of Service and Privacy Policy
-        </p>
       </div>
     </div>
   );

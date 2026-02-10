@@ -90,3 +90,22 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Remove all shadows */
+@layer utilities {
+  .shadow-sm {
+    box-shadow: none;
+  }
+  .shadow {
+    box-shadow: none;
+  }
+  .shadow-md {
+    box-shadow: none;
+  }
+  .shadow-lg {
+    box-shadow: none;
+  }
+  .shadow-xl {
+    box-shadow: none;
+  }
+}

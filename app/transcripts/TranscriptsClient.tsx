@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, CheckCircle2, Clock, Trash2 } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Upload02Icon, CheckmarkCircle02Icon, Clock01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import BatchAnalysisButton from "./BatchAnalysisButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { formatDate, formatDuration } from "@/lib/formatters";
+import { formatRelativeTime, formatDuration } from "@/lib/formatters";
 
 interface Transcript {
   id: string;
@@ -174,51 +175,51 @@ export default function TranscriptsClient({ transcripts, selectedIds, onSelectio
     <>
       {/* Bulk Actions */}
       {unanalyzedTranscripts.length > 0 && selectedIds.length > 0 && (
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            {selectedIds.length} selected
+            {selectedIds.length} Selected
           </div>
-          <Button variant="link" size="sm" onClick={clearSelection}>
-            Clear selection
+          <Button variant="outline" size="sm" onClick={clearSelection}>
+            Clear Selection
           </Button>
         </div>
       )}
 
       {unanalyzedTranscripts.length > 0 && selectedIds.length === 0 && (
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            {unanalyzedTranscripts.length} ready for analysis
+            {unanalyzedTranscripts.length} Ready for Analysis
           </div>
-          <Button variant="link" size="sm" onClick={selectAll}>
-            Select all unanalyzed
+          <Button variant="outline" size="sm" onClick={selectAll}>
+            Select All Unanalyzed
           </Button>
         </div>
       )}
 
       {/* Transcripts List */}
       {transcripts.length === 0 ? (
-        <Card className="p-12 text-center">
-          <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+        <Card className="p-12 text-center border-dashed">
+          <HugeiconsIcon icon={Upload02Icon} className="mx-auto h-12 w-12 text-muted-foreground" />
           <h3 className="mt-4 text-lg font-medium">No recordings yet</h3>
           <p className="mt-2 text-sm text-muted-foreground">
             Upload your first call recording to get started
           </p>
         </Card>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-3">
           {transcripts.map((transcript) => (
             <Card
               key={transcript.id}
-              className={`group relative transition-all hover:shadow-md ${
+              className={`group relative transition-all hover:shadow-sm ${
                 selectedIds.includes(transcript.id)
                   ? "border-primary bg-primary/5"
-                  : "hover:border-primary"
+                  : "hover:border-stone-300"
               }`}
             >
-              <div className="flex items-start gap-4 p-6">
+              <div className="flex items-start gap-4 p-3">
                 {/* Checkbox */}
                 {canSelect(transcript) && (
-                  <div className="flex-shrink-0 pt-1">
+                  <div className="flex-shrink-0 pt-0.5">
                     <Checkbox
                       checked={selectedIds.includes(transcript.id)}
                       onCheckedChange={() => toggleSelection(transcript.id)}
@@ -236,111 +237,82 @@ export default function TranscriptsClient({ transcripts, selectedIds, onSelectio
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <h3 className="text-lg font-semibold truncate">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-base font-medium truncate">
                           {transcript.filename}
                         </h3>
                         {transcript.skipTranscription && (
-                          <Badge variant="outline">Imported</Badge>
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Imported</Badge>
                         )}
                         {isAnalyzed(transcript) && (
-                          <Badge variant="secondary" className="gap-1">
-                            <CheckCircle2 className="h-3 w-3" />
+                          <Badge variant="secondary" className="gap-1 bg-green-50 text-green-700 border-green-200">
+                            <HugeiconsIcon icon={CheckmarkCircle02Icon} className="h-3 w-3" />
                             Analyzed
                           </Badge>
                         )}
                         {!isAnalyzed(transcript) && transcript.status === "ready" && (
-                          <Badge variant="outline" className="gap-1">
-                            <Clock className="h-3 w-3" />
-                            Ready to analyze
+                          <Badge variant="outline" className="gap-1 bg-amber-50 text-amber-700 border-amber-200">
+                            <HugeiconsIcon icon={Clock01Icon} className="h-3 w-3" />
+                            Ready to Analyze
                           </Badge>
                         )}
                       </div>
-                      <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                        <Badge variant={getStatusBadgeVariant(transcript.status)}>
-                          {transcript.status}
+                      <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                        <Badge variant={getStatusBadgeVariant(transcript.status)} className={
+                          transcript.status === "processing" ? "bg-blue-50 text-blue-700 border-blue-200" :
+                          transcript.status === "ready" ? "bg-green-50 text-green-700 border-green-200" :
+                          transcript.status === "error" ? "bg-red-50 text-red-700 border-red-200" :
+                          "bg-stone-50 text-stone-700 border-stone-200"
+                        }>
+                          {transcript.status.charAt(0).toUpperCase() + transcript.status.slice(1)}
                         </Badge>
                         {transcript.durationSeconds && (
-                          <span>Duration: {formatDuration(transcript.durationSeconds)}</span>
+                          <span>{formatDuration(transcript.durationSeconds)}</span>
                         )}
                         {transcript.language && (
-                          <span>Language: {transcript.language.toUpperCase()}</span>
-                        )}
-                        <span>
-                          {isAnalyzed(transcript)
-                            ? `${transcript._count.calls} analysis`
-                            : "Not analyzed"}
-                        </span>
-                        {transcript.skipTranscription && (
-                          <span>Whisper skipped</span>
+                          <span>{transcript.language.toUpperCase()}</span>
                         )}
                         {transcript.qualityScore !== null && transcript.qualityScore !== undefined && getQualityDot(transcript.qualityScore)}
+                        <span>
+                          {formatRelativeTime(transcript.createdAt)}
+                        </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 flex-shrink-0">
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       {transcript.skipTranscription && (
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              window.open(`/api/transcripts/${transcript.id}?format=normalized`, "_blank");
-                            }}
-                          >
-                            Export JSON
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              window.open(`/api/transcripts/${transcript.id}?format=markdown`, "_blank");
-                            }}
-                          >
-                            Export MD
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              window.open(`/api/transcripts/${transcript.id}?format=csv`, "_blank");
-                            }}
-                          >
-                            Download CSV
-                          </Button>
-                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.open(`/api/transcripts/${transcript.id}?format=csv`, "_blank");
+                          }}
+                        >
+                          Download CSV
+                        </Button>
                       )}
                       {!transcript.skipTranscription && transcript.status === "ready" && (
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              window.open(`/api/transcripts/${transcript.id}?format=csv`, "_blank");
-                            }}
-                          >
-                            Download CSV
-                          </Button>
-                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.open(`/api/transcripts/${transcript.id}?format=csv`, "_blank");
+                          }}
+                        >
+                          Download CSV
+                        </Button>
                       )}
-                      <div className="text-right text-sm text-muted-foreground">
-                        {formatDate(transcript.createdAt)}
-                      </div>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="icon"
                         onClick={(e) => handleDelete(e, transcript.id)}
-                        className="opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                        className="text-muted-foreground hover:text-destructive hover:border-destructive"
                         title="Delete transcript"
                       >
-                        <Trash2 className="h-5 w-5" />
+                        <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>

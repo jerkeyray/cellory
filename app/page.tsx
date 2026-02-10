@@ -12,6 +12,8 @@ import {
   Shield,
   Zap,
 } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Atom01Icon } from "@hugeicons/core-free-icons";
 import { prisma } from "@/app/lib/prisma";
 import {
   Card,
@@ -73,7 +75,12 @@ function LandingPage() {
       {/* Nav */}
       <nav className="relative z-10 mx-auto max-w-7xl px-6">
         <div className="flex items-center justify-between rounded-full border border-[#E4E4E7] bg-white pl-6 h-14 pr-1.5 py-1">
-          <span className="text-xl font-bold text-foreground">Cellory</span>
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-stone-900">
+              <HugeiconsIcon icon={Atom01Icon} size={18} color="#ff6b35" strokeWidth={1.5} />
+            </div>
+            <span className="text-xl font-bold text-foreground">Cellory</span>
+          </div>
           <Button
             asChild
             size="default"

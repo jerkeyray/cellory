@@ -2,9 +2,22 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, CheckCircle2, XCircle, Loader2, FileAudio } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Upload02Icon,
+  CheckmarkCircle02Icon,
+  CancelCircleIcon,
+  Loading03Icon,
+  MusicNote01Icon,
+} from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -15,7 +28,14 @@ interface UploadFile {
   file: File;
   id: string;
   inputType: "audio" | "import";
-  status: "pending" | "uploading" | "processing" | "ready" | "analyzing" | "complete" | "error";
+  status:
+    | "pending"
+    | "uploading"
+    | "processing"
+    | "ready"
+    | "analyzing"
+    | "complete"
+    | "error";
   progress: number;
   transcriptId?: string;
   callId?: string;
@@ -35,7 +55,9 @@ export default function BulkUploadForm() {
   // Poll for processing files and trigger auto-analysis
   useEffect(() => {
     const processingFiles = files.filter(
-      (f) => (f.status === "processing" || f.status === "analyzing") && f.transcriptId
+      (f) =>
+        (f.status === "processing" || f.status === "analyzing") &&
+        f.transcriptId,
     );
 
     if (processingFiles.length === 0) return;
@@ -53,9 +75,13 @@ export default function BulkUploadForm() {
             setFiles((prev) =>
               prev.map((f) =>
                 f.id === uploadFile.id
-                  ? { ...f, status: "error", error: "Processing timeout after 5 minutes" }
-                  : f
-              )
+                  ? {
+                      ...f,
+                      status: "error",
+                      error: "Processing timeout after 5 minutes",
+                    }
+                  : f,
+              ),
             );
             toast.error("Processing timeout", {
               description: `${uploadFile.file.name} - please try again`,
@@ -66,12 +92,14 @@ export default function BulkUploadForm() {
           // Increment poll count
           setFiles((prev) =>
             prev.map((f) =>
-              f.id === uploadFile.id ? { ...f, pollCount: pollCount + 1 } : f
-            )
+              f.id === uploadFile.id ? { ...f, pollCount: pollCount + 1 } : f,
+            ),
           );
 
           try {
-            const res = await fetch(`/api/transcripts/${uploadFile.transcriptId}`);
+            const res = await fetch(
+              `/api/transcripts/${uploadFile.transcriptId}`,
+            );
             if (!res.ok) {
               let errorMessage = "Failed to check transcript status";
               try {
@@ -87,8 +115,8 @@ export default function BulkUploadForm() {
                 prev.map((f) =>
                   f.id === uploadFile.id
                     ? { ...f, status: "error", error: errorMessage }
-                    : f
-                )
+                    : f,
+                ),
               );
               toast.error("Processing failed", {
                 description: `${uploadFile.file.name} - ${errorMessage}`,
@@ -106,8 +134,8 @@ export default function BulkUploadForm() {
                   prev.map((f) =>
                     f.id === uploadFile.id
                       ? { ...f, status: "analyzing", progress: 75 }
-                      : f
-                  )
+                      : f,
+                  ),
                 );
 
                 toast.success("Transcription complete", {
@@ -119,7 +147,9 @@ export default function BulkUploadForm() {
                   const analysisRes = await fetch("/api/calls", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ transcriptId: uploadFile.transcriptId }),
+                    body: JSON.stringify({
+                      transcriptId: uploadFile.transcriptId,
+                    }),
                   });
 
                   if (analysisRes.ok) {
@@ -127,9 +157,14 @@ export default function BulkUploadForm() {
                     setFiles((prev) =>
                       prev.map((f) =>
                         f.id === uploadFile.id
-                          ? { ...f, status: "complete", progress: 100, callId: analysisData.id }
-                          : f
-                      )
+                          ? {
+                              ...f,
+                              status: "complete",
+                              progress: 100,
+                              callId: analysisData.id,
+                            }
+                          : f,
+                      ),
                     );
                     toast.success("Analysis complete", {
                       description: `${uploadFile.file.name} is ready`,
@@ -164,8 +199,8 @@ export default function BulkUploadForm() {
                                 ? err.message
                                 : "Auto-analysis failed",
                           }
-                        : f
-                    )
+                        : f,
+                    ),
                   );
                   toast.error("Auto-analysis failed", {
                     description:
@@ -179,8 +214,8 @@ export default function BulkUploadForm() {
                   prev.map((f) =>
                     f.id === uploadFile.id
                       ? { ...f, status: "ready", progress: 100 }
-                      : f
-                  )
+                      : f,
+                  ),
                 );
                 toast.success("Transcription complete", {
                   description: uploadFile.file.name,
@@ -191,8 +226,8 @@ export default function BulkUploadForm() {
                 prev.map((f) =>
                   f.id === uploadFile.id
                     ? { ...f, status: "error", error: "Transcription failed" }
-                    : f
-                )
+                    : f,
+                ),
               );
               toast.error("Transcription failed", {
                 description: uploadFile.file.name,
@@ -201,7 +236,7 @@ export default function BulkUploadForm() {
           } catch (err) {
             console.error("Polling error:", err);
           }
-        })
+        }),
       );
     }, 5000);
 
@@ -245,8 +280,10 @@ export default function BulkUploadForm() {
   const uploadFile = async (uploadFile: UploadFile) => {
     setFiles((prev) =>
       prev.map((f) =>
-        f.id === uploadFile.id ? { ...f, status: "uploading", progress: 10 } : f
-      )
+        f.id === uploadFile.id
+          ? { ...f, status: "uploading", progress: 10 }
+          : f,
+      ),
     );
 
     try {
@@ -274,8 +311,8 @@ export default function BulkUploadForm() {
                 progress: 50,
                 transcriptId: result.id,
               }
-            : f
-        )
+            : f,
+        ),
       );
 
       toast.success("Upload successful", {
@@ -292,8 +329,8 @@ export default function BulkUploadForm() {
                 status: "error",
                 error: err.message || "Upload failed",
               }
-            : f
-        )
+            : f,
+        ),
       );
       toast.error("Upload failed", {
         description: err.message || "Failed to upload file",
@@ -304,15 +341,18 @@ export default function BulkUploadForm() {
   const importFile = async (uploadFile: UploadFile) => {
     setFiles((prev) =>
       prev.map((f) =>
-        f.id === uploadFile.id ? { ...f, status: "uploading", progress: 20 } : f
-      )
+        f.id === uploadFile.id
+          ? { ...f, status: "uploading", progress: 20 }
+          : f,
+      ),
     );
 
     try {
       const extension = uploadFile.file.name.toLowerCase().split(".").pop();
       const isJson = extension === "json";
       const isCsv = extension === "csv";
-      const isMarkdown = extension === "md" || extension === "markdown" || extension === "txt";
+      const isMarkdown =
+        extension === "md" || extension === "markdown" || extension === "txt";
 
       if (!isJson && !isCsv && !isMarkdown) {
         throw new Error("Unsupported import format. Use .json, .csv, or .md");
@@ -356,8 +396,8 @@ export default function BulkUploadForm() {
           prev.map((f) =>
             f.id === uploadFile.id
               ? { ...f, status: "ready", progress: 100, transcriptId }
-              : f
-          )
+              : f,
+          ),
         );
         toast.success("Transcript imported", {
           description: `${uploadFile.file.name} is ready for analysis`,
@@ -370,8 +410,8 @@ export default function BulkUploadForm() {
         prev.map((f) =>
           f.id === uploadFile.id
             ? { ...f, status: "analyzing", progress: 70, transcriptId }
-            : f
-        )
+            : f,
+        ),
       );
       toast.success("Call analysis ready", {
         description: "Markers are being extracted.",
@@ -392,9 +432,14 @@ export default function BulkUploadForm() {
       setFiles((prev) =>
         prev.map((f) =>
           f.id === uploadFile.id
-            ? { ...f, status: "complete", progress: 100, callId: analysisData.id }
-            : f
-        )
+            ? {
+                ...f,
+                status: "complete",
+                progress: 100,
+                callId: analysisData.id,
+              }
+            : f,
+        ),
       );
       toast.success("Import analysis started", {
         description: `${uploadFile.file.name} is processing markers`,
@@ -413,8 +458,8 @@ export default function BulkUploadForm() {
                 status: "error",
                 error: err.message || "Import failed",
               }
-            : f
-        )
+            : f,
+        ),
       );
       toast.error("Import failed", {
         description: err.message || "Failed to import transcript",
@@ -470,22 +515,49 @@ export default function BulkUploadForm() {
   };
 
   const clearCompleted = () => {
-    setFiles((prev) => prev.filter((f) => f.status !== "ready" && f.status !== "complete" && f.status !== "error"));
+    setFiles((prev) =>
+      prev.filter(
+        (f) =>
+          f.status !== "ready" &&
+          f.status !== "complete" &&
+          f.status !== "error",
+      ),
+    );
   };
 
   const getStatusIcon = (status: UploadFile["status"]) => {
     switch (status) {
       case "ready":
       case "complete":
-        return <CheckCircle2 className="h-5 w-5 text-green-600" />;
+        return (
+          <HugeiconsIcon
+            icon={CheckmarkCircle02Icon}
+            className="h-5 w-5 text-green-600"
+          />
+        );
       case "error":
-        return <XCircle className="h-5 w-5 text-destructive" />;
+        return (
+          <HugeiconsIcon
+            icon={CancelCircleIcon}
+            className="h-5 w-5 text-destructive"
+          />
+        );
       case "uploading":
       case "processing":
       case "analyzing":
-        return <Loader2 className="h-5 w-5 animate-spin text-primary" />;
+        return (
+          <HugeiconsIcon
+            icon={Loading03Icon}
+            className="h-5 w-5 animate-spin text-primary"
+          />
+        );
       default:
-        return <FileAudio className="h-5 w-5 text-muted-foreground" />;
+        return (
+          <HugeiconsIcon
+            icon={MusicNote01Icon}
+            className="h-5 w-5 text-muted-foreground"
+          />
+        );
     }
   };
 
@@ -497,11 +569,11 @@ export default function BulkUploadForm() {
       case "processing":
         return `${sizeMB} MB • ${uploadFile.inputType === "audio" ? "Transcribing..." : "Importing..."}`;
       case "analyzing":
-        return `${sizeMB} MB • Call analysis ready - markers are being extracted`;
+        return `${sizeMB} MB • Call analysis ready - Markers are being extracted`;
       case "ready":
-        return `${sizeMB} MB • ${uploadFile.inputType === "audio" ? "Transcription complete" : "Import complete"}`;
+        return `${sizeMB} MB • ${uploadFile.inputType === "audio" ? "Transcription Complete" : "Import Complete"}`;
       case "complete":
-        return `${sizeMB} MB • Analysis complete`;
+        return `${sizeMB} MB • Analysis Complete`;
       case "error":
         return `${sizeMB} MB • ${uploadFile.error}`;
       default:
@@ -510,22 +582,43 @@ export default function BulkUploadForm() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button onClick={() => fileInputRef.current?.click()}>
-          Upload Audio
-        </Button>
-        <Button variant="outline" onClick={() => importInputRef.current?.click()}>
-          Import Transcript
-        </Button>
-        <input
-          ref={importInputRef}
-          type="file"
-          accept=".json,.csv,.md,.markdown,.txt"
-          multiple
-          onChange={handleImportInput}
-          className="hidden"
-        />
+    <div className="space-y-3">
+      {/* Header with Actions */}
+      <div className="flex items-center justify-between flex-wrap gap-0">
+        <div className="flex items-center gap-2 mb-4">
+          <Button onClick={() => fileInputRef.current?.click()}>
+            Upload Audio
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => importInputRef.current?.click()}
+          >
+            Import Transcript
+          </Button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".json,.csv,.md,.markdown,.txt"
+            multiple
+            onChange={handleImportInput}
+            className="hidden"
+          />
+        </div>
+
+        {/* Auto-Analyze Toggle - Moved to header */}
+        <div className="flex items-center gap-2.5">
+          <Label
+            htmlFor="auto-analyze"
+            className="text-sm font-medium text-muted-foreground"
+          >
+            Auto-analyze
+          </Label>
+          <Switch
+            id="auto-analyze"
+            checked={autoAnalyze}
+            onCheckedChange={setAutoAnalyze}
+          />
+        </div>
       </div>
 
       {/* Drag and Drop Zone */}
@@ -535,24 +628,24 @@ export default function BulkUploadForm() {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-all ${
+        className={`cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-all ${
           isDragging
             ? "border-primary bg-primary/5"
-            : "border-border hover:border-primary"
+            : "border-border hover:border-primary hover:bg-accent/50"
         }`}
       >
-        <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-        <h3 className="mt-4 text-lg font-semibold text-foreground">
-          {isDragging ? "Drop files here" : "Upload Audio Files"}
+        <HugeiconsIcon
+          icon={Upload02Icon}
+          className="mx-auto h-9 w-9 text-muted-foreground"
+        />
+        <h3 className="mt-2.5 text-base font-medium text-foreground">
+          {isDragging ? "Drop files here" : "Drag and drop audio files"}
         </h3>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Drop up to 10 audio files here, or click to select
+        <p className="mt-1 text-sm text-muted-foreground">
+          or click to browse (up to 10 files, max 25MB each)
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Supported formats: MP3, WAV, M4A (max 25MB each)
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Use Import Transcript for normalized JSON, speaker/sentence CSV, or sanitized markdown
+        <p className="mt-1.5 text-xs text-muted-foreground">
+          Supported: MP3, WAV, M4A • For transcripts: JSON, CSV, or Markdown
         </p>
         <input
           ref={fileInputRef}
@@ -564,27 +657,6 @@ export default function BulkUploadForm() {
         />
       </div>
 
-      {/* Auto-Analyze Toggle */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="auto-analyze" className="text-sm font-medium">
-                Auto-analyze after transcription/import
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Automatically start call analysis when ingestion completes
-              </p>
-            </div>
-            <Switch
-              id="auto-analyze"
-              checked={autoAnalyze}
-              onCheckedChange={setAutoAnalyze}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Upload Queue */}
       {files.length > 0 && (
         <Card>
@@ -592,24 +664,33 @@ export default function BulkUploadForm() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Upload Queue</CardTitle>
-                <CardDescription>{files.length} file{files.length === 1 ? '' : 's'}</CardDescription>
+                <CardDescription>
+                  {files.length} file{files.length === 1 ? "" : "s"}
+                </CardDescription>
               </div>
-              {files.some((f) => f.status === "ready" || f.status === "complete" || f.status === "error") && (
-                <Button variant="ghost" size="sm" onClick={clearCompleted}>
-                  Clear completed
+              {files.some(
+                (f) =>
+                  f.status === "ready" ||
+                  f.status === "complete" ||
+                  f.status === "error",
+              ) && (
+                <Button variant="outline" size="sm" onClick={clearCompleted}>
+                  Clear Completed
                 </Button>
               )}
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2.5">
             {files.map((uploadFile) => (
               <div
                 key={uploadFile.id}
-                className="flex items-center gap-4 rounded-lg border p-4"
+                className="flex items-center gap-4 rounded-lg border p-3.5"
               >
                 {/* Status Icon */}
-                <div className="flex-shrink-0">{getStatusIcon(uploadFile.status)}</div>
+                <div className="flex-shrink-0">
+                  {getStatusIcon(uploadFile.status)}
+                </div>
 
                 {/* File Info */}
                 <div className="min-w-0 flex-1">
@@ -632,23 +713,29 @@ export default function BulkUploadForm() {
                 <div className="flex-shrink-0">
                   {uploadFile.status === "complete" && uploadFile.callId ? (
                     <Button
-                      variant="link"
+                      variant="outline"
                       size="sm"
                       onClick={() => router.push(`/calls/${uploadFile.callId}`)}
                     >
                       View
                     </Button>
-                  ) : uploadFile.status === "ready" && uploadFile.transcriptId ? (
+                  ) : uploadFile.status === "ready" &&
+                    uploadFile.transcriptId ? (
                     <Button
-                      variant="link"
+                      variant="outline"
                       size="sm"
-                      onClick={() => router.push(`/calls/new?transcriptId=${uploadFile.transcriptId}`)}
+                      onClick={() =>
+                        router.push(
+                          `/calls/new?transcriptId=${uploadFile.transcriptId}`,
+                        )
+                      }
                     >
                       Analyze
                     </Button>
-                  ) : uploadFile.status === "pending" || uploadFile.status === "error" ? (
+                  ) : uploadFile.status === "pending" ||
+                    uploadFile.status === "error" ? (
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => removeFile(uploadFile.id)}
                       className="text-destructive hover:text-destructive"

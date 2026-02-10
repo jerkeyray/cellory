@@ -289,7 +289,7 @@ export default function CallsListClient({ calls, stats }: CallsListClientProps) 
         {filteredCalls.length > 0 && (
           <button
             onClick={handleExport}
-            className="flex items-center gap-2 rounded-lg border border px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-[#f5f5f5]"
+            className="flex items-center gap-2 rounded-lg border border-stone-300 bg-background px-3 py-1.5 text-sm font-medium text-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.7)] transition-colors hover:bg-stone-50"
           >
             <svg
               className="h-4 w-4"

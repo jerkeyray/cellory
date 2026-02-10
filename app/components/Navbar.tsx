@@ -3,8 +3,8 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Menu } from "lucide-react";
-import CelloryLogo from "@/app/components/CelloryLogo";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Atom01Icon, Menu01Icon } from "@hugeicons/core-free-icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -66,18 +66,21 @@ export default function Navbar({ user }: NavbarProps) {
       <div className="mx-auto max-w-7xl px-6">
         <div className={`flex items-center justify-between rounded-full border pl-6 h-14 pr-1.5 py-1 transition-all duration-300 ${
           isScrolled
-            ? "border-stone-200/80 bg-white/95 backdrop-blur-md shadow-md shadow-black/5"
-            : "border-stone-200/60 bg-white/90 backdrop-blur-sm shadow-sm shadow-black/5"
+            ? "border-stone-200/80 bg-white/95 backdrop-blur-md"
+            : "border-stone-200/60 bg-white/90 backdrop-blur-sm"
         }`}>
           {/* Logo */}
           <Link
             href="/"
-            className="inline-flex items-center justify-center rounded-full bg-white/85 px-4 py-1.5 shadow-sm ring-1 ring-stone-200 transition-opacity hover:opacity-85"
+            className="inline-flex items-center gap-2.5 transition-opacity hover:opacity-85"
           >
-            <CelloryLogo />
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-stone-900">
+              <HugeiconsIcon icon={Atom01Icon} size={18} color="#ff6b35" strokeWidth={1.5} />
+            </div>
+            <span className="text-xl font-bold text-foreground">Cellory</span>
           </Link>
 
-          {/* Desktop Navigation Links */}
+          {/* Desktop Navigation Links - Always visible */}
           <div className="hidden items-center gap-1 md:flex">
             {navLinks.map((link) => {
               const active = isActive(link.href);
@@ -85,9 +88,9 @@ export default function Navbar({ user }: NavbarProps) {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                     active
-                      ? "bg-[#ff6b35] text-white shadow-md"
+                      ? "bg-[#ff6b35] text-white"
                       : "text-foreground hover:bg-stone-100 hover:text-[#ff6b35]"
                   }`}
                 >
@@ -106,7 +109,7 @@ export default function Navbar({ user }: NavbarProps) {
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-stone-100">
                     <Avatar className="h-9 w-9">
                       <AvatarImage src={user.image || undefined} alt={user.name || ""} />
-                      <AvatarFallback className="text-xs font-semibold">{userInitials}</AvatarFallback>
+                      <AvatarFallback className="text-xs font-medium">{userInitials}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
@@ -136,7 +139,7 @@ export default function Navbar({ user }: NavbarProps) {
               <Sheet>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-stone-100">
-                    <Menu className="h-5 w-5" />
+                    <HugeiconsIcon icon={Menu01Icon} className="h-5 w-5" />
                     <span className="sr-only">Toggle menu</span>
                   </Button>
                 </SheetTrigger>
@@ -146,7 +149,7 @@ export default function Navbar({ user }: NavbarProps) {
                     <div className="flex items-center gap-3 border-b pb-4">
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={user.image || undefined} alt={user.name || ""} />
-                        <AvatarFallback className="font-semibold">{userInitials}</AvatarFallback>
+                        <AvatarFallback className="font-medium">{userInitials}</AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col">
                         <span className="text-sm font-medium">{user.name}</span>
@@ -164,7 +167,7 @@ export default function Navbar({ user }: NavbarProps) {
                           <Link
                             key={link.href}
                             href={link.href}
-                            className={`px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+                            className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                               active
                                 ? "bg-[#ff6b35] text-white"
                                 : "text-foreground hover:bg-stone-100 hover:text-[#ff6b35]"

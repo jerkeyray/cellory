@@ -30,7 +30,7 @@ export default function MainContent({ children }: { children: React.ReactNode })
   const needsMargin = !isAuthPage && hasSidebar;
 
   return (
-    <main className={`min-h-screen transition-all duration-300 ${needsMargin ? "lg:ml-64" : ""}`}>
+    <main className={`min-h-screen transition-all duration-300 ${needsMargin ? "lg:ml-[280px]" : ""}`}>
       {children}
     </main>
   );
