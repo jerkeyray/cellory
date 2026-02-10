@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 
 export default function VantaGlobe() {
   const vantaRef = useRef<HTMLDivElement>(null);
   const vantaEffect = useRef<any>(null);
+  const [threeLoaded, setThreeLoaded] = useState(false);
 
   useEffect(() => {
     // Cleanup function
@@ -17,7 +18,7 @@ export default function VantaGlobe() {
   }, []);
 
   const initVanta = () => {
-    if (vantaRef.current && (window as any).VANTA) {
+    if (vantaRef.current && (window as any).VANTA && (window as any).THREE) {
       vantaEffect.current = (window as any).VANTA.GLOBE({
         el: vantaRef.current,
         mouseControls: true,
@@ -39,13 +40,16 @@ export default function VantaGlobe() {
     <>
       <Script
         src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"
-        strategy="lazyOnload"
+        strategy="afterInteractive"
+        onLoad={() => setThreeLoaded(true)}
       />
-      <Script
-        src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js"
-        strategy="lazyOnload"
-        onLoad={initVanta}
-      />
+      {threeLoaded && (
+        <Script
+          src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js"
+          strategy="afterInteractive"
+          onLoad={initVanta}
+        />
+      )}
       <div ref={vantaRef} className="w-full h-full" />
     </>
   );
