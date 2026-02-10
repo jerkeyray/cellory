@@ -89,6 +89,8 @@ model Call {
   transcriptId       String      @map("transcript_id")
   outcome           CallOutcome
   backboardThreadId String?     @map("backboard_thread_id")
+  backboardError    String?     @map("backboard_error") @db.Text
+  backboardErrorAt  DateTime?   @map("backboard_error_at")
   status            CallStatus  @default(pending)
   createdAt         DateTime    @default(now()) @map("created_at")
 

@@ -177,12 +177,17 @@ async function processTranscription(transcriptId: string, file: File) {
   } catch (error) {
     console.error(`Transcription failed for ${transcriptId}:`, error);
 
-    // Update status to error
-    await prisma.transcript.update({
-      where: { id: transcriptId },
-      data: {
-        status: "error",
-      },
-    });
+    // Update status to error (critical - wrap in try-catch to ensure we always handle errors)
+    try {
+      await prisma.transcript.update({
+        where: { id: transcriptId },
+        data: {
+          status: "error",
+        },
+      });
+    } catch (updateError) {
+      console.error(`[${transcriptId}] CRITICAL: Failed to update status to error:`, updateError);
+      // Log critical failure but can't throw - this is already in an async fire-and-forget context
+    }
   }
 }

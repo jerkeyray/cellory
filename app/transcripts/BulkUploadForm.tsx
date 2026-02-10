@@ -19,6 +19,7 @@ interface UploadFile {
   transcriptId?: string;
   callId?: string;
   error?: string;
+  pollCount?: number; // Track polling attempts for timeout
 }
 
 export default function BulkUploadForm() {
@@ -37,12 +38,40 @@ export default function BulkUploadForm() {
 
     if (processingFiles.length === 0) return;
 
+    const MAX_POLL_COUNT = 60; // 5 minutes at 5s intervals
+
     const pollInterval = setInterval(async () => {
-      for (const uploadFile of processingFiles) {
-        try {
-          const res = await fetch(`/api/transcripts/${uploadFile.transcriptId}`);
-          if (res.ok) {
-            const data = await res.json();
+      // Use Promise.all to parallelize status checks instead of sequential loop
+      await Promise.all(
+        processingFiles.map(async (uploadFile) => {
+          const pollCount = uploadFile.pollCount || 0;
+
+          // Check for timeout
+          if (pollCount >= MAX_POLL_COUNT) {
+            setFiles((prev) =>
+              prev.map((f) =>
+                f.id === uploadFile.id
+                  ? { ...f, status: "error", error: "Processing timeout after 5 minutes" }
+                  : f
+              )
+            );
+            toast.error("Processing timeout", {
+              description: `${uploadFile.file.name} - please try again`,
+            });
+            return;
+          }
+
+          // Increment poll count
+          setFiles((prev) =>
+            prev.map((f) =>
+              f.id === uploadFile.id ? { ...f, pollCount: pollCount + 1 } : f
+            )
+          );
+
+          try {
+            const res = await fetch(`/api/transcripts/${uploadFile.transcriptId}`);
+            if (res.ok) {
+              const data = await res.json();
 
             if (data.status === "ready" && uploadFile.status === "processing") {
               // Transcription complete
@@ -127,7 +156,8 @@ export default function BulkUploadForm() {
         } catch (err) {
           console.error("Polling error:", err);
         }
-      }
+      })
+      );
     }, 5000);
 
     return () => clearInterval(pollInterval);

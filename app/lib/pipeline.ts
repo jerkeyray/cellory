@@ -63,27 +63,31 @@ export async function processCall(callId: string): Promise<PipelineResult> {
 
     console.log(`[${callId}] Created ${chunks.length} chunks`);
 
-    // Step 2: Extract decision-grade markers (gpt-4o-mini, costs money)
-    console.log(`[${callId}] Extracting v3 markers...`);
-    const extractionResults = await extractMarkersBatchV3(chunks);
+    // Step 2: Extract decision-grade markers & NLU markers in parallel (gpt-4o-mini, costs money)
+    console.log(`[${callId}] Extracting v3 markers and NLU markers in parallel...`);
+    const [extractionResults, nluResults] = await Promise.all([
+      extractMarkersBatchV3(chunks),
+      extractNLUMarkersBatch(chunks),
+    ]);
+
     const merged = mergeExtractionResultsV3(extractionResults);
+    const mergedNLU = mergeNLUResults(nluResults);
 
     console.log(`[${callId}] Extracted ${merged.markers.length} markers`);
     console.log(`[${callId}] Predicted outcome: ${merged.auxiliary_metrics.predicted_outcome || "unknown"}`);
 
-    // Auto-set outcome from AI prediction
+    // Auto-set outcome from AI prediction (non-blocking, don't fail pipeline if update fails)
     const predictedOutcome = merged.auxiliary_metrics.predicted_outcome;
     if (predictedOutcome) {
-      await prisma.call.update({
-        where: { id: callId },
-        data: { outcome: predictedOutcome },
-      });
+      try {
+        await prisma.call.update({
+          where: { id: callId },
+          data: { outcome: predictedOutcome },
+        });
+      } catch (error) {
+        console.error(`[${callId}] Failed to update predicted outcome:`, error);
+      }
     }
-
-    // Step 2.5: Extract NLU markers (intents, obligations, regulatory, entities)
-    console.log(`[${callId}] Extracting NLU markers...`);
-    const nluResults = await extractNLUMarkersBatch(chunks);
-    const mergedNLU = mergeNLUResults(nluResults);
 
     console.log(
       `[${callId}] Extracted NLU: ${mergedNLU.intents.length} intents, ` +
@@ -92,9 +96,12 @@ export async function processCall(callId: string): Promise<PipelineResult> {
         `${mergedNLU.entities.length} entities`
     );
 
-    // Step 3: Persist markers (single time field maps to both startTime/endTime for DB compat)
-    await prisma.callSignal.createMany({
-      data: merged.markers.map((marker) => ({
+    // Step 3: Prepare all signals (v3 + NLU) for single batch persist
+    const allSignals: any[] = [];
+
+    // Add v3 markers
+    merged.markers.forEach((marker) => {
+      allSignals.push({
         callId,
         chunkIndex: Math.floor(marker.time / 75),
         signalType: marker.type,
@@ -102,15 +109,12 @@ export async function processCall(callId: string): Promise<PipelineResult> {
         confidence: marker.confidence,
         startTime: marker.time,
         endTime: marker.time,
-      })),
+      });
     });
 
-    // Persist NLU markers as CallSignal records
-    const nluSignals: any[] = [];
-
-    // Intents
+    // Add NLU intents
     mergedNLU.intents.forEach((intent) => {
-      nluSignals.push({
+      allSignals.push({
         callId,
         chunkIndex: Math.floor(intent.time / 75),
         signalType: "intent_classification",
@@ -121,9 +125,9 @@ export async function processCall(callId: string): Promise<PipelineResult> {
       });
     });
 
-    // Obligations
+    // Add NLU obligations
     mergedNLU.obligations.forEach((obligation) => {
-      nluSignals.push({
+      allSignals.push({
         callId,
         chunkIndex: Math.floor(obligation.time / 75),
         signalType: "obligation_detection",
@@ -134,9 +138,9 @@ export async function processCall(callId: string): Promise<PipelineResult> {
       });
     });
 
-    // Regulatory phrases
+    // Add NLU regulatory phrases
     mergedNLU.regulatory_phrases.forEach((phrase) => {
-      nluSignals.push({
+      allSignals.push({
         callId,
         chunkIndex: 0, // Regulatory phrases are call-level
         signalType: "regulatory_phrase",
@@ -147,9 +151,9 @@ export async function processCall(callId: string): Promise<PipelineResult> {
       });
     });
 
-    // Entities
+    // Add NLU entities
     mergedNLU.entities.forEach((entity) => {
-      nluSignals.push({
+      allSignals.push({
         callId,
         chunkIndex: Math.floor(entity.time / 75),
         signalType: "entity_mention",
@@ -160,10 +164,12 @@ export async function processCall(callId: string): Promise<PipelineResult> {
       });
     });
 
-    if (nluSignals.length > 0) {
+    // Persist all signals in single batch (v3 + NLU combined)
+    if (allSignals.length > 0) {
       await prisma.callSignal.createMany({
-        data: nluSignals,
+        data: allSignals,
       });
+      console.log(`[${callId}] Persisted ${allSignals.length} total signals (v3 + NLU)`);
     }
 
     // Store merged NLU on transcript for quick access
@@ -211,17 +217,40 @@ export async function processCall(callId: string): Promise<PipelineResult> {
         transcript.content
       );
 
-      // Store thread ID on Call record if successful
+      // Store thread ID on Call record if successful (non-blocking)
       if (backboardThreadId) {
-        await prisma.call.update({
-          where: { id: callId },
-          data: { backboardThreadId },
-        });
-        console.log(`[${callId}] Stored Backboard thread ID: ${backboardThreadId}`);
+        try {
+          await prisma.call.update({
+            where: { id: callId },
+            data: {
+              backboardThreadId,
+              backboardError: null, // Clear any previous error
+              backboardErrorAt: null,
+            },
+          });
+          console.log(`[${callId}] Stored Backboard thread ID: ${backboardThreadId}`);
+        } catch (error) {
+          console.error(`[${callId}] Failed to store Backboard thread ID:`, error);
+        }
       }
     } catch (error) {
       // Non-blocking — don't fail pipeline on Backboard errors
+      const errorMessage = error instanceof Error ? error.message : "Unknown Backboard error";
       console.error(`[${callId}] Backboard integration failed:`, error);
+
+      // Store error details for debugging and potential retry
+      try {
+        await prisma.call.update({
+          where: { id: callId },
+          data: {
+            backboardError: errorMessage,
+            backboardErrorAt: new Date(),
+          },
+        });
+        console.log(`[${callId}] Stored Backboard error details for future retry`);
+      } catch (updateError) {
+        console.error(`[${callId}] Failed to store Backboard error:`, updateError);
+      }
     }
 
     // Update status to complete
@@ -243,11 +272,16 @@ export async function processCall(callId: string): Promise<PipelineResult> {
   } catch (error) {
     console.error(`[${callId}] Pipeline error:`, error);
 
-    // Update status to error
-    await prisma.call.update({
-      where: { id: callId },
-      data: { status: "error" },
-    });
+    // Update status to error (critical - wrap in try-catch to ensure we always return)
+    try {
+      await prisma.call.update({
+        where: { id: callId },
+        data: { status: "error" },
+      });
+    } catch (updateError) {
+      console.error(`[${callId}] CRITICAL: Failed to update status to error:`, updateError);
+      // Even if status update fails, continue to return error result
+    }
 
     return {
       callId,

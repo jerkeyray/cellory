@@ -76,6 +76,14 @@ export default function CallDetailPage() {
 
     if (!isProcessing) return;
 
+    // Max timeout: 5 minutes (60 polls at 5s average)
+    const MAX_POLL_COUNT = 60;
+
+    if (pollCount >= MAX_POLL_COUNT) {
+      setError(`Processing timeout - call stuck in "${call.status}" state for over 5 minutes. Please refresh the page or contact support.`);
+      return;
+    }
+
     // Set up polling with exponential backoff
     const interval = setInterval(() => {
       fetchCall();
@@ -89,12 +97,18 @@ export default function CallDetailPage() {
           setPollInterval(10000);
         }
 
+        // Check for timeout
+        if (newCount >= MAX_POLL_COUNT) {
+          setError(`Processing timeout - call stuck in "${call.status}" state for over 5 minutes. Please refresh the page or contact support.`);
+          clearInterval(interval);
+        }
+
         return newCount;
       });
     }, pollInterval);
 
     return () => clearInterval(interval);
-  }, [call?.status, pollInterval]);
+  }, [call?.status, pollInterval, pollCount]);
 
   const fetchCall = async () => {
     try {
