@@ -42,7 +42,7 @@ export default async function PlaybookDetailPage({ params }: PlaybookDetailPageP
   const confidenceScores = playbook.confidenceScores as any;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-5xl px-6 py-12">
         {/* Header */}
         <div className="mb-8">

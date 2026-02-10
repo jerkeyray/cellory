@@ -1,7 +1,7 @@
 import { signIn, auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
+import CelloryLogo from "@/app/components/CelloryLogo";
 
 export default async function SignInPage() {
   const session = await auth();
@@ -39,26 +39,11 @@ export default async function SignInPage() {
         }}
       />
 
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
-        }
-        .float-animation {
-          animation: float 3s ease-in-out infinite;
-        }
-      `}</style>
-
       <div className="relative z-10 w-full max-w-lg px-6">
-        {/* Brand Icon */}
+        {/* Brand */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center">
-            <div className="relative">
-              <div className="absolute inset-0 bg-[#ff6b35] rounded-2xl blur-xl opacity-30"></div>
-              <div className="relative bg-gradient-to-br from-[#ff6b35] to-[#ea580c] p-4 rounded-2xl shadow-lg float-animation">
-                <Sparkles className="h-8 w-8 text-white" />
-              </div>
-            </div>
+          <div className="inline-flex items-center justify-center rounded-full bg-white/85 px-5 py-2.5 shadow-sm ring-1 ring-stone-200">
+            <CelloryLogo textClassName="text-2xl" />
           </div>
         </div>
 

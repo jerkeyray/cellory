@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import { FileAudio, Phone, TrendingUp, BookOpen, Bot, ChevronLeft, ChevronRight, Menu } from "lucide-react";
+import CelloryLogo from "@/app/components/CelloryLogo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -65,8 +66,8 @@ export default function Sidebar({ user }: SidebarProps) {
           <div className="flex h-full flex-col">
             {/* Logo */}
             <div className="flex h-16 items-center border-b border-stone-200/60 px-6">
-              <Link href="/" className="text-xl font-bold text-foreground hover:text-[#ff6b35] transition-colors">
-                Cellory
+              <Link href="/" className="transition-opacity hover:opacity-80">
+                <CelloryLogo />
               </Link>
             </div>
 
@@ -81,7 +82,7 @@ export default function Sidebar({ user }: SidebarProps) {
                     href={link.href}
                     className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${
                       active
-                        ? "bg-[#ff6b35] text-white shadow-md"
+                        ? "bg-stone-100 text-[#ea580c]"
                         : "text-foreground hover:bg-stone-100 hover:text-[#ff6b35]"
                     }`}
                   >
@@ -93,7 +94,7 @@ export default function Sidebar({ user }: SidebarProps) {
             </nav>
 
             {/* User Profile */}
-            <div className="border-t border-stone-200/60 p-4">
+            <div className="p-4">
               <div className="flex items-center gap-3 mb-4">
                 <Avatar className="h-9 w-9">
                   <AvatarImage src={user.image || undefined} alt={user.name || ""} />
@@ -133,8 +134,8 @@ export default function Sidebar({ user }: SidebarProps) {
         {/* Logo & Collapse Button */}
         <div className="flex h-16 items-center justify-between border-b border-stone-200/60 px-6">
           {!collapsed && (
-            <Link href="/" className="text-xl font-bold text-foreground hover:text-[#ff6b35] transition-colors">
-              Cellory
+            <Link href="/" className="transition-opacity hover:opacity-80">
+              <CelloryLogo />
             </Link>
           )}
           <Button
@@ -162,7 +163,7 @@ export default function Sidebar({ user }: SidebarProps) {
                 href={link.href}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${
                   active
-                    ? "bg-[#ff6b35] text-white shadow-md"
+                    ? "bg-stone-100 text-[#ea580c]"
                     : "text-foreground hover:bg-stone-100 hover:text-[#ff6b35]"
                 }`}
                 title={collapsed ? link.label : undefined}
@@ -175,7 +176,7 @@ export default function Sidebar({ user }: SidebarProps) {
         </nav>
 
         {/* User Profile */}
-        <div className="border-t border-stone-200/60 p-4">
+        <div className="p-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button

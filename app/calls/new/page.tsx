@@ -11,7 +11,7 @@ export default async function NewCallPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-3xl px-6 py-12">
         {/* Header */}
         <div className="mb-8">

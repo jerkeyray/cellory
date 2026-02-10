@@ -221,7 +221,7 @@ export default async function InsightsPage() {
   const isV3 = comparison ? (comparison as any).schemaVersion === 3 : true;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-6 py-12">
         {/* Header */}
         <div className="mb-8">

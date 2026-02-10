@@ -7,7 +7,7 @@
   --accent-hover: #e55a2b;
   --border: oklch(0.922 0 0);
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  --background: oklch(0.982 0.003 264);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -15,9 +15,9 @@
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.646 0.222 41.116);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.97 0 0);
+  --secondary: oklch(0.96 0.002 264);
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
+  --muted: oklch(0.955 0.002 264);
   --muted-foreground: oklch(0.556 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
