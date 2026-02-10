@@ -180,8 +180,8 @@ export default function Sidebar({ user }: SidebarProps) {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className={`w-full justify-start gap-3 hover:bg-stone-100 ${
-                  collapsed ? "px-0 justify-center" : "px-3"
+                className={`w-full gap-3 text-left hover:bg-stone-100 ${
+                  collapsed ? "px-0 justify-center" : "px-3 justify-start"
                 }`}
               >
                 <Avatar className="h-9 w-9">
@@ -189,10 +189,10 @@ export default function Sidebar({ user }: SidebarProps) {
                   <AvatarFallback className="text-xs font-semibold">{userInitials}</AvatarFallback>
                 </Avatar>
                 {!collapsed && (
-                  <div className="flex flex-col items-start overflow-hidden">
-                    <span className="text-sm font-medium truncate w-full">{user.name}</span>
+                  <div className="flex w-full flex-col items-start overflow-hidden text-left">
+                    <span className="w-full truncate text-left text-sm font-medium">{user.name}</span>
                     {user.email && (
-                      <span className="text-xs text-muted-foreground truncate w-full">{user.email}</span>
+                      <span className="w-full truncate text-left text-xs text-muted-foreground">{user.email}</span>
                     )}
                   </div>
                 )}

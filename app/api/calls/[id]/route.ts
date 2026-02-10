@@ -28,6 +28,8 @@ export async function GET(
           select: {
             id: true,
             filename: true,
+            source: true,
+            skipTranscription: true,
             content: true,
             durationSeconds: true,
             language: true,

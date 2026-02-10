@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { safeAuth } from "@/app/lib/safe-auth";
 import { prisma } from "@/app/lib/prisma";
 import { processCallAsync } from "@/app/lib/pipeline";
 
@@ -10,7 +10,7 @@ import { processCallAsync } from "@/app/lib/pipeline";
 export async function GET(request: NextRequest) {
   try {
     // Check authentication
-    const session = await auth();
+    const session = await safeAuth();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
-    const session = await auth();
+    const session = await safeAuth();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

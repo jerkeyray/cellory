@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 interface UploadFile {
   file: File;
   id: string;
+  inputType: "audio" | "import";
   status: "pending" | "uploading" | "processing" | "ready" | "analyzing" | "complete" | "error";
   progress: number;
   transcriptId?: string;
@@ -28,6 +29,7 @@ export default function BulkUploadForm() {
   const [isDragging, setIsDragging] = useState(false);
   const [autoAnalyze, setAutoAnalyze] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
 
   // Poll for processing files and trigger auto-analysis
@@ -70,8 +72,31 @@ export default function BulkUploadForm() {
 
           try {
             const res = await fetch(`/api/transcripts/${uploadFile.transcriptId}`);
-            if (res.ok) {
-              const data = await res.json();
+            if (!res.ok) {
+              let errorMessage = "Failed to check transcript status";
+              try {
+                const errorData = await res.json();
+                errorMessage = errorData.error || errorMessage;
+              } catch {
+                // Ignore parse errors and use fallback message.
+              }
+              if (res.status === 401) {
+                errorMessage = "Session expired. Please sign in again.";
+              }
+              setFiles((prev) =>
+                prev.map((f) =>
+                  f.id === uploadFile.id
+                    ? { ...f, status: "error", error: errorMessage }
+                    : f
+                )
+              );
+              toast.error("Processing failed", {
+                description: `${uploadFile.file.name} - ${errorMessage}`,
+              });
+              return;
+            }
+
+            const data = await res.json();
 
             if (data.status === "ready" && uploadFile.status === "processing") {
               // Transcription complete
@@ -114,18 +139,39 @@ export default function BulkUploadForm() {
                       },
                     });
                   } else {
-                    throw new Error("Analysis failed");
+                    let errorMessage = "Analysis failed";
+                    try {
+                      const errorData = await analysisRes.json();
+                      errorMessage = errorData.error || errorMessage;
+                    } catch {
+                      // Ignore parse errors and use fallback message.
+                    }
+                    if (analysisRes.status === 401) {
+                      errorMessage = "Session expired. Please sign in again.";
+                    }
+                    throw new Error(errorMessage);
                   }
                 } catch (err) {
                   setFiles((prev) =>
                     prev.map((f) =>
                       f.id === uploadFile.id
-                        ? { ...f, status: "ready", progress: 100 }
+                        ? {
+                            ...f,
+                            status: "ready",
+                            progress: 100,
+                            error:
+                              err instanceof Error
+                                ? err.message
+                                : "Auto-analysis failed",
+                          }
                         : f
                     )
                   );
-                  toast.info("Transcription ready", {
-                    description: `${uploadFile.file.name} - analysis can be started manually`,
+                  toast.error("Auto-analysis failed", {
+                    description:
+                      err instanceof Error
+                        ? `${uploadFile.file.name} - ${err.message}`
+                        : `${uploadFile.file.name} - analysis can be started manually`,
                   });
                 }
               } else {
@@ -152,11 +198,10 @@ export default function BulkUploadForm() {
                 description: uploadFile.file.name,
               });
             }
+          } catch (err) {
+            console.error("Polling error:", err);
           }
-        } catch (err) {
-          console.error("Polling error:", err);
-        }
-      })
+        })
       );
     }, 5000);
 
@@ -170,6 +215,7 @@ export default function BulkUploadForm() {
     const uploadFiles: UploadFile[] = fileArray.map((file) => ({
       file,
       id: Math.random().toString(36).substr(2, 9),
+      inputType: "audio",
       status: "pending",
       progress: 0,
     }));
@@ -178,6 +224,22 @@ export default function BulkUploadForm() {
 
     // Start uploading files
     uploadFiles.forEach((fileToUpload) => uploadFile(fileToUpload));
+  };
+
+  const handleImports = (newFiles: FileList | null) => {
+    if (!newFiles || newFiles.length === 0) return;
+
+    const fileArray = Array.from(newFiles).slice(0, 10);
+    const importFiles: UploadFile[] = fileArray.map((file) => ({
+      file,
+      id: Math.random().toString(36).substr(2, 9),
+      inputType: "import",
+      status: "pending",
+      progress: 0,
+    }));
+
+    setFiles((prev) => [...prev, ...importFiles]);
+    importFiles.forEach((fileToImport) => importFile(fileToImport));
   };
 
   const uploadFile = async (uploadFile: UploadFile) => {
@@ -239,6 +301,127 @@ export default function BulkUploadForm() {
     }
   };
 
+  const importFile = async (uploadFile: UploadFile) => {
+    setFiles((prev) =>
+      prev.map((f) =>
+        f.id === uploadFile.id ? { ...f, status: "uploading", progress: 20 } : f
+      )
+    );
+
+    try {
+      const extension = uploadFile.file.name.toLowerCase().split(".").pop();
+      const isJson = extension === "json";
+      const isCsv = extension === "csv";
+      const isMarkdown = extension === "md" || extension === "markdown" || extension === "txt";
+
+      if (!isJson && !isCsv && !isMarkdown) {
+        throw new Error("Unsupported import format. Use .json, .csv, or .md");
+      }
+
+      let res: Response;
+      if (isJson) {
+        const text = await uploadFile.file.text();
+        const json = JSON.parse(text);
+        res = await fetch("/api/transcripts/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(json),
+        });
+      } else if (isCsv) {
+        const csv = await uploadFile.file.text();
+        res = await fetch("/api/transcripts/import", {
+          method: "POST",
+          headers: { "Content-Type": "text/csv" },
+          body: csv,
+        });
+      } else {
+        const markdown = await uploadFile.file.text();
+        res = await fetch("/api/transcripts/import", {
+          method: "POST",
+          headers: { "Content-Type": "text/markdown" },
+          body: markdown,
+        });
+      }
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Import failed");
+      }
+
+      const result = await res.json();
+      const transcriptId: string = result.id;
+
+      if (!autoAnalyze) {
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === uploadFile.id
+              ? { ...f, status: "ready", progress: 100, transcriptId }
+              : f
+          )
+        );
+        toast.success("Transcript imported", {
+          description: `${uploadFile.file.name} is ready for analysis`,
+        });
+        router.refresh();
+        return;
+      }
+
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === uploadFile.id
+            ? { ...f, status: "analyzing", progress: 70, transcriptId }
+            : f
+        )
+      );
+      toast.success("Call analysis ready", {
+        description: "Markers are being extracted.",
+      });
+
+      const analysisRes = await fetch("/api/calls", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcriptId }),
+      });
+
+      if (!analysisRes.ok) {
+        const data = await analysisRes.json();
+        throw new Error(data.error || "Analysis failed");
+      }
+
+      const analysisData = await analysisRes.json();
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === uploadFile.id
+            ? { ...f, status: "complete", progress: 100, callId: analysisData.id }
+            : f
+        )
+      );
+      toast.success("Import analysis started", {
+        description: `${uploadFile.file.name} is processing markers`,
+        action: {
+          label: "View",
+          onClick: () => router.push(`/calls/${analysisData.id}`),
+        },
+      });
+      router.refresh();
+    } catch (err: any) {
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === uploadFile.id
+            ? {
+                ...f,
+                status: "error",
+                error: err.message || "Import failed",
+              }
+            : f
+        )
+      );
+      toast.error("Import failed", {
+        description: err.message || "Failed to import transcript",
+      });
+    }
+  };
+
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -277,6 +460,11 @@ export default function BulkUploadForm() {
     e.target.value = ""; // Reset input
   };
 
+  const handleImportInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleImports(e.target.files);
+    e.target.value = "";
+  };
+
   const removeFile = (id: string) => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
@@ -307,11 +495,11 @@ export default function BulkUploadForm() {
       case "uploading":
         return `${sizeMB} MB • Uploading...`;
       case "processing":
-        return `${sizeMB} MB • Transcribing...`;
+        return `${sizeMB} MB • ${uploadFile.inputType === "audio" ? "Transcribing..." : "Importing..."}`;
       case "analyzing":
-        return `${sizeMB} MB • Analyzing...`;
+        return `${sizeMB} MB • Call analysis ready - markers are being extracted`;
       case "ready":
-        return `${sizeMB} MB • Transcription complete`;
+        return `${sizeMB} MB • ${uploadFile.inputType === "audio" ? "Transcription complete" : "Import complete"}`;
       case "complete":
         return `${sizeMB} MB • Analysis complete`;
       case "error":
@@ -323,6 +511,23 @@ export default function BulkUploadForm() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Button onClick={() => fileInputRef.current?.click()}>
+          Upload Audio
+        </Button>
+        <Button variant="outline" onClick={() => importInputRef.current?.click()}>
+          Import Transcript
+        </Button>
+        <input
+          ref={importInputRef}
+          type="file"
+          accept=".json,.csv,.md,.markdown,.txt"
+          multiple
+          onChange={handleImportInput}
+          className="hidden"
+        />
+      </div>
+
       {/* Drag and Drop Zone */}
       <div
         onDragEnter={handleDragEnter}
@@ -346,6 +551,9 @@ export default function BulkUploadForm() {
         <p className="mt-1 text-xs text-muted-foreground">
           Supported formats: MP3, WAV, M4A (max 25MB each)
         </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Use Import Transcript for normalized JSON, speaker/sentence CSV, or sanitized markdown
+        </p>
         <input
           ref={fileInputRef}
           type="file"
@@ -362,10 +570,10 @@ export default function BulkUploadForm() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="auto-analyze" className="text-sm font-medium">
-                Auto-analyze after transcription
+                Auto-analyze after transcription/import
               </Label>
               <p className="text-xs text-muted-foreground">
-                Automatically start call analysis when transcription completes
+                Automatically start call analysis when ingestion completes
               </p>
             </div>
             <Switch

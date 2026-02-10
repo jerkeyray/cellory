@@ -23,6 +23,8 @@ interface Transcript {
   id: string;
   filename: string;
   status: "processing" | "ready" | "error";
+  source: string;
+  skipTranscription: boolean;
   durationSeconds: number | null;
   language: string | null;
   qualityScore: number | null;
@@ -238,6 +240,9 @@ export default function TranscriptsClient({ transcripts, selectedIds, onSelectio
                         <h3 className="text-lg font-semibold truncate">
                           {transcript.filename}
                         </h3>
+                        {transcript.skipTranscription && (
+                          <Badge variant="outline">Imported</Badge>
+                        )}
                         {isAnalyzed(transcript) && (
                           <Badge variant="secondary" className="gap-1">
                             <CheckCircle2 className="h-3 w-3" />
@@ -266,10 +271,65 @@ export default function TranscriptsClient({ transcripts, selectedIds, onSelectio
                             ? `${transcript._count.calls} analysis`
                             : "Not analyzed"}
                         </span>
+                        {transcript.skipTranscription && (
+                          <span>Whisper skipped</span>
+                        )}
                         {transcript.qualityScore !== null && transcript.qualityScore !== undefined && getQualityDot(transcript.qualityScore)}
                       </div>
                     </div>
                     <div className="flex items-center gap-4 flex-shrink-0">
+                      {transcript.skipTranscription && (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              window.open(`/api/transcripts/${transcript.id}?format=normalized`, "_blank");
+                            }}
+                          >
+                            Export JSON
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              window.open(`/api/transcripts/${transcript.id}?format=markdown`, "_blank");
+                            }}
+                          >
+                            Export MD
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              window.open(`/api/transcripts/${transcript.id}?format=csv`, "_blank");
+                            }}
+                          >
+                            Download CSV
+                          </Button>
+                        </div>
+                      )}
+                      {!transcript.skipTranscription && transcript.status === "ready" && (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              window.open(`/api/transcripts/${transcript.id}?format=csv`, "_blank");
+                            }}
+                          >
+                            Download CSV
+                          </Button>
+                        </div>
+                      )}
                       <div className="text-right text-sm text-muted-foreground">
                         {formatDate(transcript.createdAt)}
                       </div>

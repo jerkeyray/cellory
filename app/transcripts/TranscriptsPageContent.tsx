@@ -10,6 +10,8 @@ interface Transcript {
   id: string;
   filename: string;
   status: "processing" | "ready" | "error";
+  source: string;
+  skipTranscription: boolean;
   durationSeconds: number | null;
   language: string | null;
   qualityScore: number | null;

@@ -15,6 +15,7 @@ import {
   extractNLUMarkersBatch,
   mergeNLUResults,
 } from "./nlu-extraction";
+import { ImportedSegment } from "./transcript-import";
 
 export interface PipelineResult {
   callId: string;
@@ -53,11 +54,21 @@ export async function processCall(callId: string): Promise<PipelineResult> {
       throw new Error("Transcript not ready for processing");
     }
 
+    const transcriptSource = transcript.skipTranscription
+      ? `imported (${transcript.source})`
+      : "audio_whisper";
+    console.log(`[${callId}] Starting pipeline for source: ${transcriptSource}`);
+
+    const fallbackWordTimestamps = buildWordTimestampsFromImportedSegments(
+      transcript.importedSegments as ImportedSegment[] | null | undefined
+    );
+    const wordTimestamps = (transcript.wordTimestamps as any) || fallbackWordTimestamps;
+
     // Step 1: Chunk transcript (pure computation, $0)
     console.log(`[${callId}] Chunking transcript...`);
     const chunks = chunkTranscript(
       transcript.content,
-      transcript.wordTimestamps as any,
+      wordTimestamps,
       transcript.durationSeconds
     );
 
@@ -301,4 +312,28 @@ export async function processCallAsync(callId: string): Promise<void> {
   processCall(callId).catch((error) => {
     console.error(`Background processing error for ${callId}:`, error);
   });
+}
+
+function buildWordTimestampsFromImportedSegments(
+  importedSegments: ImportedSegment[] | null | undefined
+) {
+  if (!Array.isArray(importedSegments) || importedSegments.length === 0) {
+    return [];
+  }
+
+  const words: Array<{ word: string; start: number; end: number }> = [];
+  importedSegments.forEach((segment) => {
+    const parts = segment.text.split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return;
+
+    const duration = Math.max(0.001, segment.end - segment.start);
+    const perWord = duration / parts.length;
+    parts.forEach((word, index) => {
+      const start = segment.start + perWord * index;
+      const end = index === parts.length - 1 ? segment.end : start + perWord;
+      words.push({ word, start, end });
+    });
+  });
+
+  return words;
 }

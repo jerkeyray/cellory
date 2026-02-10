@@ -2,6 +2,11 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/app/lib/prisma";
+import {
+  getAuthErrorFingerprint,
+  isRecoverableAuthError,
+  shouldLogAuthErrorOnce,
+} from "@/app/lib/auth-errors";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -20,6 +25,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   trustHost: true,
+  logger: {
+    error(error) {
+      const maybeError = (error as { cause?: unknown } | undefined)?.cause ?? error;
+
+      if (isRecoverableAuthError(maybeError) || isRecoverableAuthError(error)) {
+        if (process.env.NODE_ENV === "development") {
+          const key = `authjs:${getAuthErrorFingerprint(maybeError)}`;
+          if (shouldLogAuthErrorOnce(key)) {
+            console.warn("[auth] recoverable adapter error");
+          }
+        }
+        return;
+      }
+
+      console.error("[auth][error]", error);
+    },
+  },
   callbacks: {
     session({ session, user }) {
       if (session.user) {

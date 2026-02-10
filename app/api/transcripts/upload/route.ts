@@ -67,6 +67,8 @@ export async function POST(request: Request) {
         userId: session.user.id,
         filename: file.name,
         content: "", // Will be filled after transcription
+        source: "audio_upload",
+        skipTranscription: false,
         status: "processing",
       },
     });

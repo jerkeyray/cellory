@@ -1,10 +1,10 @@
 import { prisma } from "@/app/lib/prisma";
-import { auth } from "@/auth";
+import { safeAuth } from "@/app/lib/safe-auth";
 import TranscriptsPageContent from "./TranscriptsPageContent";
 import { redirect } from "next/navigation";
 
 export default async function TranscriptsPage() {
-  const session = await auth();
+  const session = await safeAuth();
   if (!session?.user) {
     redirect("/auth/signin");
   }
@@ -16,6 +16,8 @@ export default async function TranscriptsPage() {
       id: true,
       filename: true,
       status: true,
+      source: true,
+      skipTranscription: true,
       durationSeconds: true,
       language: true,
       qualityScore: true,

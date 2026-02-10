@@ -19,6 +19,8 @@ export async function GET() {
         id: true,
         filename: true,
         status: true,
+        source: true,
+        skipTranscription: true,
         durationSeconds: true,
         language: true,
         createdAt: true,

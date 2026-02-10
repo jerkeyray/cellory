@@ -49,6 +49,10 @@ model Transcript {
   userId            String           @map("user_id")
   filename          String
   content           String           @db.Text
+  source            String           @default("audio_upload")
+  skipTranscription Boolean          @default(false) @map("skip_transcription")
+  importedSegments  Json?            @map("imported_segments")
+  importMetadata    Json?            @map("import_metadata")
   durationSeconds   Int?
   wordTimestamps    Json?
   language          String?

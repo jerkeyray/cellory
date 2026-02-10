@@ -1,5 +1,4 @@
-# cellory 
-### Built for DEVSOC'26
+# cellory
 
 Cellory turns call recordings into decision-grade intelligence for revenue, collections, and customer success teams. It transforms raw conversation data into auditable behavioral signals, outcome comparisons, and prescriptive playbooks that compound over time.
 
@@ -82,12 +81,24 @@ bun install
 cp .env.example .env.local
 # Fill in the values in .env.local (see Environment Variables below)
 
-# Set up database
-bun run db:push
+# Set up database schema (migration-first)
+bun run db:migrate
 
 # Start development server
 bun run dev
 ```
+
+### Importing Pre-Normalized Transcripts
+
+Cellory now supports a direct analysis path that skips Whisper.
+
+- **API:** `POST /api/transcripts/import`
+- **Payload schema:** `{ transcriptId, userId?, source?, metadata?, segments[] }`
+- **Segment shape:** `{ speaker, start, end, text, confidence? }`
+- **Accepted content types:** `application/json` and `text/markdown`
+- **Export formats:** `GET /api/transcripts/:id?format=normalized` or `?format=markdown`
+
+The import path stores `importedSegments`, marks the transcript `ready`, and sets `skipTranscription=true` so call analysis can start immediately.
 
 ### Environment Variables
 
@@ -109,8 +120,13 @@ bun run dev
 | `bun run build` | Production build |
 | `bun run start` | Start production server |
 | `bun run lint` | Run ESLint |
+| `bun run db:migrate` | Apply committed Prisma migrations |
+| `bun run db:migrate:dev` | Create/apply new migration in development |
 | `bun run db:push` | Push Prisma schema to database |
 | `bun run db:studio` | Open Prisma Studio |
+| `bun run test` | Run unit tests (Bun) |
+| `bun run normalize:maec -- --input ./in.md --output ./out.json` | Normalize MAEC/sanitized transcript text |
+| `bun run import:normalized -- --api http://localhost:3000 --cookie "..." ./out.json` | Sequentially import normalized transcripts |
 
 ## Tech Stack
 

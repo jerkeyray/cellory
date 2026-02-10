@@ -33,6 +33,8 @@ interface Call {
   transcript: {
     id: string;
     filename: string;
+    source: string;
+    skipTranscription: boolean;
     content: string;
     durationSeconds: number | null;
     qualityScore: number | null;
@@ -431,9 +433,18 @@ export default function CallDetailPage() {
 
             {/* Transcript */}
             <div className="rounded-xl border border bg-white p-6">
-              <h2 className="mb-4 text-lg font-semibold text-foreground">
-                Transcript
-              </h2>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold text-foreground">
+                  Transcript
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => window.open(`/api/transcripts/${call.transcript.id}?format=csv`, "_blank")}
+                  className="rounded-md border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+                >
+                  Download CSV
+                </button>
+              </div>
 
               {/* Diarization Timeline */}
               {call.transcript.diarizationSegments && call.transcript.durationSeconds && (
@@ -478,6 +489,12 @@ export default function CallDetailPage() {
                 Metadata
               </h3>
               <dl className="space-y-3 text-sm">
+                <div>
+                  <dt className="text-muted-foreground">Transcript Source</dt>
+                  <dd className="mt-1 font-medium text-foreground">
+                    {call.transcript.skipTranscription ? `Imported (${call.transcript.source})` : "Audio upload"}
+                  </dd>
+                </div>
                 <div>
                   <dt className="text-muted-foreground">Duration</dt>
                   <dd className="mt-1 font-medium text-foreground">
