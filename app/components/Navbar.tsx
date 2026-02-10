@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Atom01Icon, Menu01Icon } from "@hugeicons/core-free-icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -123,13 +124,9 @@ export default function Navbar({ user }: NavbarProps) {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <form action="/api/auth/signout" method="POST">
-                    <DropdownMenuItem asChild>
-                      <button type="submit" className="w-full cursor-pointer">
-                        Sign out
-                      </button>
-                    </DropdownMenuItem>
-                  </form>
+                  <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
+                    Sign out
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -180,11 +177,11 @@ export default function Navbar({ user }: NavbarProps) {
                     </nav>
 
                     {/* Sign Out */}
-                    <form action="/api/auth/signout" method="POST" className="mt-auto border-t pt-4">
-                      <Button type="submit" variant="outline" className="w-full">
+                    <div className="mt-auto border-t pt-4">
+                      <Button onClick={() => signOut()} variant="outline" className="w-full">
                         Sign out
                       </Button>
-                    </form>
+                    </div>
                   </div>
                 </SheetContent>
               </Sheet>

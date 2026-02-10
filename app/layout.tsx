@@ -4,6 +4,7 @@ import "./globals.css";
 import SidebarWrapper from "./components/SidebarWrapper";
 import MainContent from "./components/MainContent";
 import { Toaster } from "sonner";
+import { Providers } from "./components/Providers";
 
 export const dynamic = "force-dynamic";
 
@@ -32,11 +33,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SidebarWrapper />
-        <MainContent>
-          {children}
-        </MainContent>
-        <Toaster />
+        <Providers>
+          <SidebarWrapper />
+          <MainContent>
+            {children}
+          </MainContent>
+          <Toaster />
+        </Providers>
       </body>
     </html>
   );

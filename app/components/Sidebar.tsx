@@ -3,8 +3,9 @@
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Atom01Icon, MusicNote01Icon, CallIcon, Analytics01Icon, BookOpen01Icon, AiBrain01Icon, Menu01Icon } from "@hugeicons/core-free-icons";
+import { Atom01Icon, MusicNote01Icon, CallIcon, Analytics01Icon, BookOpen01Icon, Menu01Icon } from "@hugeicons/core-free-icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -22,7 +23,6 @@ const navLinks = [
   { href: "/calls", label: "Calls", icon: CallIcon },
   { href: "/insights", label: "Insights", icon: Analytics01Icon },
   { href: "/playbooks", label: "Playbooks", icon: BookOpen01Icon },
-  { href: "/agent", label: "Agents", icon: AiBrain01Icon },
 ];
 
 interface SidebarProps {
@@ -45,9 +45,6 @@ export default function Sidebar({ user }: SidebarProps) {
   const isActive = (href: string) => {
     if (href === "/calls") {
       return pathname === "/calls" || pathname?.startsWith("/calls/");
-    }
-    if (href === "/agent") {
-      return pathname === "/agent" || pathname?.startsWith("/agent/");
     }
     return pathname === href || pathname?.startsWith(href + "/");
   };
@@ -108,11 +105,9 @@ export default function Sidebar({ user }: SidebarProps) {
                   )}
                 </div>
               </div>
-              <form action="/api/auth/signout" method="POST">
-                <Button type="submit" variant="outline" className="w-full">
-                  Sign out
-                </Button>
-              </form>
+              <Button onClick={() => signOut()} variant="outline" className="w-full">
+                Sign out
+              </Button>
             </div>
           </div>
         </SheetContent>
@@ -189,13 +184,9 @@ export default function Sidebar({ user }: SidebarProps) {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <form action="/api/auth/signout" method="POST">
-                  <DropdownMenuItem asChild>
-                    <button type="submit" className="w-full cursor-pointer">
-                      Sign out
-                    </button>
-                  </DropdownMenuItem>
-                </form>
+                <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
+                  Sign out
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

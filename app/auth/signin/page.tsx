@@ -72,15 +72,15 @@ export default async function SignInPage() {
 
           <div className="relative bg-white rounded-3xl border border-stone-200 p-10">
             <div className="text-center mb-8">
-              {/* Logo Icon Above Text */}
-              <div className="flex justify-center mb-4">
-                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-stone-200">
-                  <HugeiconsIcon icon={Atom01Icon} size={24} color="#78716c" strokeWidth={1.5} />
+              {/* Logo matching sidebar */}
+              <div className="flex justify-center items-center gap-2.5 mb-6">
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-stone-900">
+                  <HugeiconsIcon icon={Atom01Icon} size={18} color="#ff6b35" strokeWidth={1.5} />
                 </div>
+                <span className="text-xl font-bold text-foreground">Cellory</span>
               </div>
-              
-              <h2 className="text-3xl font-semibold text-foreground mb-1">Welcome back to</h2>
-              <h1 className="text-3xl font-bold text-foreground mb-3">Cellory</h1>
+
+              <h2 className="text-3xl font-semibold text-foreground mb-1">Welcome back</h2>
               
               <p className="text-muted-foreground">
                 Sign in to convert your call recordings into structured intelligence
