@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { after, NextRequest, NextResponse } from "next/server";
+import { safeAuth } from "@/app/lib/safe-auth";
 import { prisma } from "@/app/lib/prisma";
 
 export const runtime = "nodejs";
@@ -14,7 +14,7 @@ export const maxDuration = 300; // 5 minutes for batch processing
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
-    const session = await auth();
+    const session = await safeAuth();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -85,8 +85,14 @@ export async function POST(request: NextRequest) {
       })
     );
 
-    // Start async processing for all calls (don't await)
-    processBatchCalls(calls.map((c) => c.id));
+    // Schedule background batch processing after response.
+    after(async () => {
+      try {
+        await processBatchCalls(calls.map((c) => c.id));
+      } catch (backgroundError) {
+        console.error("Batch background processing failed:", backgroundError);
+      }
+    });
 
     return NextResponse.json(
       {

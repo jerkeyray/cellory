@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu } from "lucide-react";
+import CelloryLogo from "@/app/components/CelloryLogo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -69,8 +70,11 @@ export default function Navbar({ user }: NavbarProps) {
             : "border-stone-200/60 bg-white/90 backdrop-blur-sm shadow-sm shadow-black/5"
         }`}>
           {/* Logo */}
-          <Link href="/" className="text-xl font-bold text-foreground hover:text-[#ff6b35] transition-colors">
-            Cellory
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center rounded-full bg-white/85 px-4 py-1.5 shadow-sm ring-1 ring-stone-200 transition-opacity hover:opacity-85"
+          >
+            <CelloryLogo />
           </Link>
 
           {/* Desktop Navigation Links */}

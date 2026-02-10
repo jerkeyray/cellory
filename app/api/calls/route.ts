@@ -1,7 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { safeAuth } from "@/app/lib/safe-auth";
 import { prisma } from "@/app/lib/prisma";
 import { processCallAsync } from "@/app/lib/pipeline";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 /**
  * GET /api/calls
@@ -113,8 +117,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Start processing asynchronously (don't await)
-    processCallAsync(call.id);
+    // Schedule processing after response so serverless runtimes keep the task alive.
+    after(async () => {
+      try {
+        await processCallAsync(call.id);
+      } catch (backgroundError) {
+        console.error(`[${call.id}] Background call processing failed:`, backgroundError);
+      }
+    });
 
     return NextResponse.json(
       {
